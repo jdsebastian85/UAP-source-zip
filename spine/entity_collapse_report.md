@@ -1,10 +1,24 @@
-# Entity collapse report (T3)
+# Entity collapse report (T3 + T3b)
 
 Input: 11090 rows in entities.csv (untouched). Output: 11090 rows in entities_normalized.csv.
 
 Rows changed: 806. Rule firings: {'RANK': 334, 'MARKING': 439, 'LAPAZ': 33}.
 
 `value_normalized` is a retrieval convenience only. `value_verbatim` is the evidence and is preserved on every row.
+
+## Candidate flags (T3b.1)
+
+Flags are measurements of the normalized string, not judgments about the person. Rules are defined in the header of `scripts/normalize_entities.py` and are reproducible by re-running it. Flag rules target PERSON capture defects; non-PERSON rows are marked CLEAN because no rule addresses them.
+
+| flag | rows |
+|---|---|
+| CLEAN | 10686 |
+| TRUNCATED | 402 |
+| TRAILING_PROSE | 17 |
+| MULTI_RANK | 2 |
+| FORM_LABEL | 1 |
+
+CLEAN rows: 10686 of 11090 (404 carry at least one flag).
 
 ## Merge decisions (every distinct rewrite, with row counts)
 
@@ -65,7 +79,7 @@ Rows changed: 806. Rule firings: {'RANK': 334, 'MARKING': 439, 'LAPAZ': 33}.
 | 1 | PERSON | `Brig. Gen. Harold F. Knowles` | `Brig Gen Harold F. Knowles` |
 | 1 | PERSON | `Brig. Gen. Howard G. Bunker Distribution` | `Brig Gen Howard G. Bunker Distribution` |
 | 1 | PERSON | `Brig. Gen. Jack C. Ledford. USAF` | `Brig Gen Jack C. Ledford. USAF` |
-| 1 | PERSON | `Brig. Gen. Maj. Gen. Lt. Gen` | `Brig Gen Maj. Gen. Lt. Gen` |
+| 1 | PERSON | `Brig. Gen. Maj. Gen. Lt. Gen` | `Brig Gen Maj Gen Lt Gen` |
 | 1 | PERSON | `Brig. Gen. Ralph E` | `Brig Gen Ralph E` |
 | 1 | MARKING | `CONFIDENTIAl` | `CONFIDENTIAL` |
 | 1 | PERSON | `Capt. A` | `Capt A` |
@@ -197,11 +211,11 @@ Rows changed: 806. Rule firings: {'RANK': 334, 'MARKING': 439, 'LAPAZ': 33}.
 | 1 | PERSON | `Lt Gen. Twin` | `Lt Gen Twin` |
 | 1 | PERSON | `Lt. Brigham` | `Lt Brigham` |
 | 1 | PERSON | `Lt. Carl W. Stucld` | `Lt Carl W. Stucld` |
-| 1 | PERSON | `Lt. Cdr` | `Lt Cdr` |
-| 1 | PERSON | `Lt. Cdr. Carpenter` | `Lt Cdr. Carpenter` |
-| 1 | PERSON | `Lt. Cdr. Carpenter's` | `Lt Cdr. Carpenter's` |
-| 1 | PERSON | `Lt. Cdr. US Navy-` | `Lt Cdr. US Navy-` |
-| 1 | PERSON | `Lt. Cmdr. Walter Schirra` | `Lt Cmdr. Walter Schirra` |
+| 1 | PERSON | `Lt. Cdr` | `Lt Cmdr` |
+| 1 | PERSON | `Lt. Cdr. Carpenter` | `Lt Cmdr Carpenter` |
+| 1 | PERSON | `Lt. Cdr. Carpenter's` | `Lt Cmdr Carpenter's` |
+| 1 | PERSON | `Lt. Cdr. US Navy-` | `Lt Cmdr US Navy-` |
+| 1 | PERSON | `Lt. Cmdr. Walter Schirra` | `Lt Cmdr Walter Schirra` |
 | 1 | PERSON | `Lt. Co` | `Lt Co` |
 | 1 | PERSON | `Lt. Col Oarret.t` | `Lt Col Oarret.t` |
 | 1 | PERSON | `Lt. Col. DONALD L. SPRINGER` | `Lt Col DONALD L. SPRINGER` |
@@ -237,9 +251,9 @@ Rows changed: 806. Rule firings: {'RANK': 334, 'MARKING': 439, 'LAPAZ': 33}.
 | 1 | PERSON | `Lt. Colonel DONALD SPRINGER` | `Lt Col DONALD SPRINGER` |
 | 1 | PERSON | `Lt. Colonel. U.S.A.P. File` | `Lt Col U.S.A.P. File` |
 | 1 | PERSON | `Lt. Combs` | `Lt Combs` |
-| 1 | PERSON | `Lt. Comdr. Marcus L. Lowe` | `Lt Comdr. Marcus L. Lowe` |
-| 1 | PERSON | `Lt. Commander Lowe` | `Lt Commander Lowe` |
-| 1 | PERSON | `Lt. Commander MELVIN MICHAEL KUHN` | `Lt Commander MELVIN MICHAEL KUHN` |
+| 1 | PERSON | `Lt. Comdr. Marcus L. Lowe` | `Lt Cmdr Marcus L. Lowe` |
+| 1 | PERSON | `Lt. Commander Lowe` | `Lt Cmdr Lowe` |
+| 1 | PERSON | `Lt. Commander MELVIN MICHAEL KUHN` | `Lt Cmdr MELVIN MICHAEL KUHN` |
 | 1 | PERSON | `Lt. DAVIS` | `Lt DAVIS` |
 | 1 | PERSON | `Lt. David C. Brigham` | `Lt David C. Brigham` |
 | 1 | PERSON | `Lt. Gen` | `Lt Gen` |
@@ -277,7 +291,7 @@ Rows changed: 806. Rule firings: {'RANK': 334, 'MARKING': 439, 'LAPAZ': 33}.
 | 1 | PERSON | `Maj. Gen. H. McK. Roper` | `Maj Gen H. McK. Roper` |
 | 1 | PERSON | `Maj. Gen. John A. Sa` | `Maj Gen John A. Sa` |
 | 1 | PERSON | `Maj. Joseph P. Martino` | `Maj Joseph P. Martino` |
-| 1 | PERSON | `Maj. Lt. Col. Col` | `Maj Lt. Col. Col` |
+| 1 | PERSON | `Maj. Lt. Col. Col` | `Maj Lt Col Col` |
 | 1 | PERSON | `Maj. Phipps` | `Maj Phipps` |
 | 1 | PERSON | `Maj. Pomerleau` | `Maj Pomerleau` |
 | 1 | PERSON | `Maj. Rudolph Anderson` | `Maj Rudolph Anderson` |
@@ -292,7 +306,7 @@ Rows changed: 806. Rule firings: {'RANK': 334, 'MARKING': 439, 'LAPAZ': 33}.
 
 ## Candidates NOT merged (judgment calls, left as-is)
 
-These resemble known names but differ by letters, not just dots, spacing, or case. Merging them would be an inference, so they stand verbatim in both columns:
+These resemble known names but differ by letters, not just dots, spacing, or case. Merging them would be an inference, so they stand verbatim in both columns. They are listed as unreviewed retrieval hints in `spine/aliases.yml` (T3b.2), which search expands through at query time; nothing from that file is written into any CSV:
 
 - `Dr. La.Pa` (x1) — resembles LaPaz but letters differ/truncated
 - `Dr. LaPa` (x1) — resembles LaPaz but letters differ/truncated
@@ -301,6 +315,6 @@ These resemble known names but differ by letters, not just dots, spacing, or cas
 - `Lt. Col. Ge.rrett` (x2) — resembles Garrett but letters differ
 - `Lt. Col. Gerrett` (x1) — resembles Garrett but letters differ
 
-## DocId truncation check
+## DocId stamps
 
-Rows matching a DocId pattern in entities.csv: 0. The truncated DocId stamps noted in the earlier 48-item snapshot are not present in this extraction, so no DocId collapse was performed.
+DocId stamps do not appear in entities.csv; they live in pages.jsonl under `doc_id_stamp`. Truncation is assessed against that source by `scripts/assess_docid_stamps.py` (T3b.4), which logs cited gap rows in gaps.csv. The T3 check that looked only at entities.csv was mis-scoped and its 'nothing found' result is superseded.
