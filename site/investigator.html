@@ -205,9 +205,23 @@ const saveM = () => { try { localStorage.setItem(LS, JSON.stringify(M)); } catch
   alert("Could not save. Browser storage may be full or blocked in private mode."); } };
 const mk = k => M[k] || (M[k] = {star:false, note:"", ts:0});
 const isMarked = k => !!M[k] && (M[k].star || (M[k].note||"").trim());
-function toggleStar(k, label){ const m = mk(k); m.star = !m.star; m.label = label; m.ts = Date.now();
+/* Entity marks carry the verbatim spellings of the group at the time of
+   marking. The key is type + normalized value, because that is what defines a
+   group; the verbatim list is not identity (a group has several spellings) but
+   it is what a future migration would search on if normalization rules change
+   the normalized value out from under a key. */
+function stamp(k, m){
+  const p = parseKey(k);
+  if (p.kind === "ent"){
+    const i = entIndex[p.t + ":" + p.v];
+    if (i !== undefined) m.vv = D.ents[i].vv;
+  }
+  m.ts = Date.now();
+  return m;
+}
+function toggleStar(k, label){ const m = stamp(k, mk(k)); m.star = !m.star; m.label = label;
   if (!m.star && !(m.note||"").trim()) delete M[k]; saveM(); render(); }
-function setNote(k, v, label){ const m = mk(k); m.note = v; m.label = label; m.ts = Date.now();
+function setNote(k, v, label){ const m = stamp(k, mk(k)); m.note = v; m.label = label;
   if (!m.star && !v.trim()) delete M[k]; saveM(); }
 
 /* ---------- tiny helpers ---------- */
