@@ -148,8 +148,9 @@ redaction blocks. Same description discipline as video.
 
 ## T8. Rebuild and deploy the public site
 
-`site/pursue_corpus_reader.html` is a working single-file prototype with the corpus
-data embedded. Regenerate it from current CSVs via `scripts/build_site.py`.
+`index.html` at the repo root is the working single-file site with the corpus
+data embedded; GitHub Pages serves it directly. Regenerate it from current CSVs
+via `scripts/build_site.py` (sole output; `site/` holds only `template.html`).
 
 Deployment plan:
 1. **Internet Archive** for videos and source PDFs. Free, permanent, built for exactly

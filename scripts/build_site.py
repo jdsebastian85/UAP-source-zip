@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 """Regenerate the single-file corpus reader from current spine CSVs.
-Usage: python3 scripts/build_site.py [--out site/pursue_corpus_reader.html]
+Usage: python3 scripts/build_site.py [--out index.html]
+Writes index.html at the repo root, the file GitHub Pages serves; site/ holds
+only template.html. One output, one location, no copy to keep in sync.
 Every displayed value must trace to a CSV row. No derived or inferred values."""
 import argparse, csv, json, os, re
 SPINE = os.environ.get("SPINE", "spine")
@@ -70,7 +72,8 @@ def main(out):
             "etotal": n_ment, "eflag": n_flag}
     tpl = open(os.path.join(os.path.dirname(__file__), "..", "site", "template.html")).read()
     html = tpl.replace("__DATA__", json.dumps(data, separators=(",",":")))
-    os.makedirs(os.path.dirname(out), exist_ok=True)
+    if os.path.dirname(out):
+        os.makedirs(os.path.dirname(out), exist_ok=True)
     open(out,"w").write(html)
     print(f"wrote {out}: {len(docs)} documents, {len(media)} media rows, "
           f"{round(sum(m['d'] for m in media)/3600,2)} hours, "
@@ -78,5 +81,5 @@ def main(out):
           f"{len(alias)} alias clusters")
 
 if __name__ == "__main__":
-    ap = argparse.ArgumentParser(); ap.add_argument("--out", default="site/pursue_corpus_reader.html")
+    ap = argparse.ArgumentParser(); ap.add_argument("--out", default="index.html")
     main(ap.parse_args().out)
