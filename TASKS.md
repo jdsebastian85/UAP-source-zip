@@ -32,15 +32,63 @@ rows, no schema errors.
 
 ---
 
-## T1. Confirm the three remaining Drive zips are not duplicates — BEFORE downloading
+## T1. Confirm the remaining Drive zips are not duplicates — BEFORE downloading
 
-The loose video uploads may already contain everything in the three pending zips
-(~3 GB, ~4.5 GB, ~5.6 GB). Downloading 13 GB of duplicates wastes a night.
+The loose video uploads may already contain everything in the pending zips. Downloading
+duplicates wastes a night.
 
 List each zip's contents without extracting, diff filenames against `media.csv`, and
 report the overlap. Only pull a zip that contains genuinely new files.
 
+Zips present in the Drive folder as of 2026-08-08 (`Release_1.zip` 1.22 GB,
+`release_03_documents.zip` 867 MB, `Archive.zip` 69 MB, plus `spine snapshot.zip` 610 KB
+which is this repo's own snapshot, not source material). Contents are not listable through
+the Drive API — a zip is one opaque file to it — so this needs a machine that can download
+and `unzip -l` them.
+
 **Acceptance:** a written diff per zip: N files, M already in media.csv, K new.
+
+**Done on the video side (2026-08-08):** the Drive folder was listed in full and diffed
+against `media.csv`. 133 videos in Drive, all 112 `media.csv` rows resolve to a live Drive
+file, 21 videos are in Drive with no spine row. See T1b.
+
+---
+
+## T1b. Ingest the 21 videos that are in Drive but not in the spine
+
+Listed in `media_links.csv` as `spine_status = NOT_INGESTED`. They are not a new release
+family — every one belongs to a family already in the corpus:
+
+| Family | Count |
+|---|---|
+| `DOD_111688*` / `DOD_111689*` (ISR) | 12 |
+| `video_2605_DOD_*` (edited presentation products) | 7 |
+| `DOD_111764796-1920x1080-9000k` | 1 |
+| `DOD_111887384` | 1 |
+
+Two of them (`DOD_111764796-1920x1080-9000k`, `DOD_111887384`) sit in the Drive root rather
+than in the release folder. That is a filing fact about Drive, not a fact about the release.
+
+Needs the files on disk: `ffprobe` for the Layer 0 row, frame extraction for the triage
+strip. Run the existing media ingest path, then re-run `scripts/build_media_links.py` so
+`spine_status` flips to `INDEXED`.
+
+**Acceptance:** `media.csv` at 133 rows, `verify_spine.py` OK, `media_links.csv` showing
+`NOT_INGESTED` 0.
+
+---
+
+## T1c. Documents cannot be linked until the zips are extracted
+
+The 211 PDFs are not files in Drive. They are contents of the zips above. Drive can only
+address a file, and nothing can address a path inside a zip, so there is no URL to store
+for any document until the archives are extracted into a Drive folder as individual files.
+
+This is the blocker on a document-side `media_links.csv` equivalent, and it needs a
+computer — extracting 2 GB of zips is not something the Drive API can be asked to do.
+
+**Acceptance:** 211 PDFs present as individual Drive files; a `doc_links.csv` built the
+same way as `media_links.csv`, joined on `manifest.csv` release_id.
 
 ---
 
@@ -164,9 +212,44 @@ Deployment plan:
    strip.
 5. Cluster pages, Western US Event first, with contradictions displayed as
    contradictions rather than resolved.
+6. Links on the public site come from `source_url` and `mirror_url` only. The `working_*`
+   columns in `media_links.csv` point at one private Drive account and must not be
+   rendered into the public build. They are for the investigator tool.
 
 **Acceptance:** site builds from a single command; every displayed value traces to a
-CSV row; no derived or inferred values on any page.
+CSV row; no derived or inferred values on any page; no `working_*` URL in the output.
+
+---
+
+## T9. Investigator tool — built 2026-08-08, `investigate.html`
+
+The private counterpart to the public reader. Built by `scripts/build_investigator.py`
+from `site/investigator.html`. 1.5 MB, phone-first, no external requests except the Drive
+player iframe.
+
+What it does: browse 211 documents with gap counts, read any of the 8,661 pages with the
+text source labeled (`TEXT_LAYER` and `OCR_RECOVERED` shown as separate blocks, never
+merged), 133 media files grouped by family with the triage strip and a one-tap Drive open,
+6,155 entity groups where a cite jumps straight to the page with the verbatim spelling
+highlighted, and stars plus notes on any document, page, media file or entity.
+
+Page text is not embedded — 27 MB would kill it on a phone. The build emits a byte-offset
+index into `spine/pages.jsonl` and the app fetches one page per Range request, validating
+that the returned record is the release and page it asked for. If the host ignores Range
+it downloads once, says so, and slices locally.
+
+Still open on it:
+- Notes are localStorage, so per-device. Export from the Marks tab is the only backup.
+- Documents have no open-in-one-tap because they are still inside the zips (T1c). When
+  `doc_links.csv` exists, wire it into the document card the same way media is wired.
+- No full-text search across pages. Entity search covers most of it; a real one wants
+  Pagefind or a prebuilt inverted index, and should wait until after T2 so recovered text
+  is in the index.
+
+**Note before merging:** GitHub Pages serves whatever is on the default branch, so merging
+puts `investigate.html` at a public URL. Nothing in it is secret — the notes are local to
+the browser and never leave the device, and the Drive folder is already shared
+`anyone: reader` — but it is a public URL with no auth, so treat it as discoverable.
 
 ---
 
@@ -183,3 +266,9 @@ CSV row; no derived or inferred values on any page.
   211-document, 8-hour-media pipeline is stronger evidence than any bullet on a resume.
 - Internet Archive hosting keeps marginal cost near zero, which is what makes the free
   public version sustainable indefinitely rather than until a bandwidth bill arrives.
+- Drive is not a hosting plan and should not be treated as one. Public link-sharing on a
+  consumer account carries an undocumented daily download cap; a file that gets attention
+  starts returning a quota page instead of the video, and the failure looks like the
+  corpus is broken rather than like Google rate-limiting. This is the operational argument
+  for the Internet Archive upload, separate from the removal argument. Until that upload
+  exists, the media set has a single point of failure that is one account's quota.
