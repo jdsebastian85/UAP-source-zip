@@ -58,6 +58,16 @@ working_view_url, working_embed_url, working_direct_url, listed_utc, source_url,
 is in Drive but has not been through `ingest.py`). It is recomputed by the build script; it
 is a statement about this repo, not about the file.
 
+Working root: `https://drive.google.com/drive/folders/1Z8_NzOrfjXiQTsxkj0GEbUdr1SI5LjWM`
+(link-shared, `anyone: reader`). Two media files sit in the Drive account root rather than
+in that folder; `drive_parent_id` records which is which.
+
+`working_direct_url` uses the `drive.usercontent.google.com/download?...&export=download`
+form rather than `drive.google.com/uc?id=...`. The shorter form omits `export=download`, so
+for a video Drive treats it as a view request, and above roughly 100 MB it returns the
+virus-scan interstitial page instead of the file. Most of this media set is above that
+threshold, so the shorter form is not safe to script against.
+
 The file is derived from `drive_listing_<date>.tsv`, a verbatim capture of the Drive API
 listing, by `scripts/build_media_links.py`. Re-list Drive and re-run the script rather than
 hand-editing either file. The `working_view_url` form is confirmed by the Drive API, which
