@@ -23,6 +23,9 @@ med = load_csv("media.csv", {"release_id","source_file","duration_s","sha256_16"
 seg = load_csv("segments.csv", {"release_id","segment_no","start_page","end_page"})
 ent = load_csv("entities.csv", {"release_id","pdf_page","entity_type","value_verbatim"})
 gap = load_csv("gaps.csv", {"release_id","pdf_page","gap_type"})
+lnk = load_csv("media_links.csv", {"release_id","spine_status","drive_file_id",
+                                   "working_view_url","source_url","mirror_url"}) \
+      if os.path.exists(os.path.join(SP, "media_links.csv")) else []
 
 ids = {r["release_id"] for r in man}
 pagecount = {r["release_id"]: int(r["pages"]) for r in man}
@@ -64,6 +67,20 @@ else:
 dupe = [h for h,c in Counter(r["sha256"] for r in man).items() if c > 1]
 if dupe: warns.append(f"manifest: {len(dupe)} duplicate sha256 (same file ingested twice?)")
 
+# media_links.csv is a Layer 0 sidecar keyed on media.csv release_ids
+if lnk:
+    mids = {m["release_id"] for m in med}
+    lids = [r["release_id"] for r in lnk]
+    d = [k for k,c in Counter(lids).items() if c > 1]
+    if d: errs.append(f"media_links: duplicate release_ids {d[:5]}")
+    bad = {r["release_id"] for r in lnk if r["spine_status"] == "INDEXED"} - mids
+    if bad: errs.append(f"media_links: {len(bad)} INDEXED rows not in media.csv: {sorted(bad)[:5]}")
+    nolink = mids - set(lids)
+    if nolink: errs.append(f"media_links: {len(nolink)} media.csv rows have no link row: {sorted(nolink)[:5]}")
+    for r in lnk:
+        if not r["drive_file_id"].strip() or not r["working_view_url"].strip():
+            errs.append(f"media_links: {r['release_id']} has an empty working link"); break
+
 # Layer 5 must never be persisted
 for forbidden in ("relations.csv","edges.csv","cooccurrence.csv","layer5.csv"):
     if os.path.exists(os.path.join(SP, forbidden)):
@@ -72,6 +89,9 @@ for forbidden in ("relations.csv","edges.csv","cooccurrence.csv","layer5.csv"):
 print(f"documents {len(man)}  pages {sum(pagecount.values())}  media {len(med)} "
       f"({round(sum(float(m['duration_s']) for m in med)/3600,2)} h)")
 print(f"segments {len(seg)}  entities {len(ent)}  gaps {len(gap)} {dict(Counter(g['gap_type'] for g in gap))}")
+if lnk:
+    print(f"media_links {len(lnk)} {dict(Counter(r['spine_status'] for r in lnk))}  "
+          f"mirrored {sum(1 for r in lnk if r['mirror_url'].strip())}")
 for w in warns: print("WARN:", w)
 for e in errs: print("ERROR:", e)
 print("FAIL" if errs else "OK")
