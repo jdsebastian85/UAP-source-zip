@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>PURSUE Corpus Reader</title>
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;700&family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root{--ink:#14171a;--panel:#1b1f22;--paper:#e9e4d6;--amber:#f2a944;--stamp:#c8482f;--mut:#87908c;--line:#2b3134}
+*{box-sizing:border-box;margin:0}
+html{scroll-behavior:smooth}
+body{background:var(--ink);color:var(--paper);font-family:'IBM Plex Sans',sans-serif;font-size:15px;line-height:1.5}
+.wrap{max-width:1060px;margin:0 auto;padding:0 16px}
+/* masthead as cover sheet */
+header{border-bottom:1px solid var(--line);padding:34px 0 22px;position:relative}
+.eyebrow{font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.22em;color:var(--mut);text-transform:uppercase}
+h1{font-family:Oswald,sans-serif;font-weight:700;font-size:clamp(30px,6vw,54px);letter-spacing:.02em;text-transform:uppercase;line-height:1.05;margin:6px 0 4px}
+h1 .thin{color:var(--amber)}
+.stampbox{position:absolute;right:16px;top:30px;border:3px double var(--stamp);color:var(--stamp);font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:12px;letter-spacing:.14em;padding:7px 12px;transform:rotate(-7deg);text-transform:uppercase;user-select:none}
+.meta{font-family:'IBM Plex Mono',monospace;font-size:12.5px;color:var(--mut);margin-top:10px}
+.meta b{color:var(--paper);font-weight:600}
+/* agency share strip = signature */
+.strip{display:flex;height:14px;margin:18px 0 4px;border:1px solid var(--line)}
+.strip div{height:100%}
+.striplab{display:flex;flex-wrap:wrap;gap:10px;font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--mut)}
+.striplab i{display:inline-block;width:9px;height:9px;margin-right:4px;vertical-align:-1px}
+/* controls */
+.bar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;padding:18px 0 8px;position:sticky;top:0;background:linear-gradient(var(--ink) 85%,transparent);z-index:5}
+input[type=search]{flex:1;min-width:210px;background:var(--panel);border:1px solid var(--line);color:var(--paper);font-family:'IBM Plex Mono',monospace;font-size:14px;padding:10px 12px;border-radius:2px}
+input[type=search]:focus{outline:2px solid var(--amber);outline-offset:0}
+.chip{background:none;border:1px solid var(--line);color:var(--mut);font-family:'IBM Plex Mono',monospace;font-size:12px;padding:6px 10px;border-radius:2px;cursor:pointer}
+.chip[aria-pressed=true]{border-color:var(--amber);color:var(--amber)}
+.count{font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--mut);margin-left:auto}
+/* ledger rows */
+.row{display:grid;grid-template-columns:150px 1fr 64px 90px;gap:12px;align-items:baseline;padding:10px 6px;border-bottom:1px solid var(--line);cursor:default}
+.row:hover{background:var(--panel)}
+.rid{font-family:'IBM Plex Mono',monospace;font-size:12.5px;color:var(--amber);word-break:break-all}
+.sub{font-size:14px}
+.pg{font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--mut);text-align:right}
+.qbar{height:7px;background:var(--panel);border:1px solid var(--line);position:relative}
+.qbar i{position:absolute;left:0;top:0;bottom:0;background:var(--amber)}
+.qbar.low i{background:var(--stamp)}
+/* media cards */
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:12px;padding:14px 0}
+.card{background:var(--panel);border:1px solid var(--line);padding:12px;border-radius:2px}
+.card .rid{font-size:12px}
+.card .d{font-family:'IBM Plex Mono',monospace;font-size:22px;color:var(--paper);margin:6px 0 2px}
+.card .m{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--mut)}
+.tag{display:inline-block;border:1px solid var(--line);color:var(--mut);font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.08em;padding:2px 6px;margin-top:8px;text-transform:uppercase}
+.tag.hot{border-color:var(--stamp);color:var(--stamp)}
+/* sections */
+section{padding:8px 0 26px}
+h2{font-family:Oswald,sans-serif;font-weight:500;font-size:20px;letter-spacing:.06em;text-transform:uppercase;border-bottom:1px solid var(--line);padding:20px 0 8px;margin-bottom:4px}
+h2 span{color:var(--mut);font-size:13px;font-family:'IBM Plex Mono',monospace;letter-spacing:0;text-transform:none;margin-left:10px}
+.cluster{background:var(--panel);border:1px solid var(--line);border-left:3px solid var(--stamp);padding:16px;margin-top:14px;border-radius:2px}
+.cluster h3{font-family:Oswald,sans-serif;font-weight:500;letter-spacing:.05em;text-transform:uppercase;font-size:16px;margin-bottom:8px}
+.cluster ul{list-style:none;font-family:'IBM Plex Mono',monospace;font-size:12.5px;color:var(--mut);display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:4px 18px}
+.cluster li b{color:var(--paper);font-weight:600}
+.contra{margin-top:10px;font-size:13px;color:var(--paper);border-top:1px dashed var(--line);padding-top:10px}
+.contra em{color:var(--stamp);font-style:normal;font-family:'IBM Plex Mono',monospace;font-size:12px}
+footer{border-top:1px solid var(--line);padding:18px 0 40px;font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:var(--mut)}
+@media(max-width:640px){.row{grid-template-columns:1fr 60px}.sub{grid-column:1/-1}.qbar{display:none}.stampbox{position:static;display:inline-block;margin-top:10px}}
+@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+</style></head><body>
+<div class="wrap">
+<header>
+  <div class="eyebrow">Department of War &middot; PURSUE Initiative &middot; Public Release Corpus</div>
+  <h1>Pursue <span class="thin">Corpus Reader</span></h1>
+  <div class="stampbox">Declassified in full</div>
+  <div class="meta"><b id="ndocs"></b> documents &middot; <b id="npg"></b> pages &middot; <b id="nmed"></b> videos &middot; span <b>1946&ndash;2026</b> &middot; every value verbatim, cited to release + page</div>
+  <div class="strip" id="strip" title="Share of pages by source agency"></div>
+  <div class="striplab" id="striplab"></div>
+</header>
+
+<section>
+<h2>Documents <span id="dcount"></span></h2>
+<div class="bar">
+  <input id="q" type="search" placeholder="Search release ID or subject &mdash; e.g. fireball, Kazakhstan, Blue Book" aria-label="Search documents">
+  <button class="chip" data-a="ALL" aria-pressed="true">All</button>
+  <button class="chip" data-a="DOW" aria-pressed="false">DOW</button>
+  <button class="chip" data-a="FBI" aria-pressed="false">FBI</button>
+  <button class="chip" data-a="CIA" aria-pressed="false">CIA</button>
+  <button class="chip" data-a="NASA" aria-pressed="false">NASA</button>
+  <button class="chip" data-a="LEGACY" aria-pressed="false">Legacy files</button>
+  <span class="count" id="shown"></span>
+</div>
+<div id="rows"></div>
+</section>
+
+<section>
+<h2>Media <span>Layer 0 manifests &mdash; hash, codec, embedded creation time</span></h2>
+<div class="grid" id="media"></div>
+</section>
+
+<section>
+<h2>Cluster: Western US Event <span>densest cross-format join in the corpus</span></h2>
+<div class="cluster">
+<h3>One incident, seven formats</h3>
+<ul>
+<li><b>D077</b> case analysis</li><li><b>D078</b> notional map</li>
+<li><b>D079&ndash;D083</b> five witness narratives</li><li><b>USPER</b> helicopter log &middot; SECRET//NOFORN</li>
+<li><b>10</b> FBI digital renderings</li><li><b>3</b> Serial FD-302 interviews</li>
+<li><b>8</b> FBI-Photo-A FLIR frames</li><li><b>DOD_111764189 / 213</b> orb footage, moving imagery</li>
+</ul>
+<div class="contra"><em>PRESERVED CONTRADICTION</em> &mdash; witness-estimated distance 500&ndash;600 m vs AARO-assessed &sim;1,050 m. Both values stored verbatim with page cites; no resolution asserted.</div>
+</div>
+</section>
+
+<footer>Static prototype &middot; data embedded from spine manifest.csv + media.csv &middot; no server, no tracking. Production plan: videos + PDFs on archive.org, full-text search over 8,661 OCR pages via Pagefind.</footer>
+</div>
+<script id="data" type="application/json">__DATA__</script>
+<script>
+const D=JSON.parse(document.getElementById('data').textContent);
+const legacy=new Set(['65','38','18','255','341','342','331','59','Serial','2024','059UAP00011.pdf','059UAP00012.pdf','059UAP00013.pdf']);
+const fam=a=>['DOW','DoW'].includes(a)?'DOW':a==='FBI'?'FBI':a==='CIA'?'CIA':a==='NASA'?'NASA':legacy.has(a)?'LEGACY':'OTHER';
+const totalPg=D.docs.reduce((s,d)=>s+d.p,0);
+ndocs.textContent=D.docs.length; npg.textContent=totalPg.toLocaleString(); nmed.textContent=D.media.length;
+/* agency strip */
+const shares={},cols={DOW:'#f2a944',FBI:'#c8482f',CIA:'#87908c',NASA:'#5d7d8a',LEGACY:'#6e5b45',OTHER:'#3a4145'};
+D.docs.forEach(d=>{const f=fam(d.a);shares[f]=(shares[f]||0)+d.p});
+const order=Object.entries(shares).sort((a,b)=>b[1]-a[1]);
+order.forEach(([f,p])=>{const s=document.createElement('div');s.style.width=(100*p/totalPg)+'%';s.style.background=cols[f];strip.appendChild(s);
+striplab.insertAdjacentHTML('beforeend',`<span><i style="background:${cols[f]}"></i>${f} ${(100*p/totalPg).toFixed(0)}%</span>`)});
+/* rows */
+let AG='ALL';
+function render(){
+ const q=document.getElementById('q').value.trim().toLowerCase();
+ const hits=D.docs.filter(d=>(AG==='ALL'||fam(d.a)===AG)&&(!q||d.id.toLowerCase().includes(q)||d.s.toLowerCase().includes(q)));
+ rows.innerHTML=hits.map(d=>`<div class="row"><span class="rid">${d.id}</span><span class="sub">${d.s}${d.y?` <span style="color:var(--mut)">&middot; ${d.y}</span>`:''}</span><span class="pg">${d.p}p</span><span class="qbar ${d.q<.4?'low':''}" title="mean OCR quality ${d.q}"><i style="width:${Math.round(d.q*100)}%"></i></span></div>`).join('');
+ shown.textContent=hits.length+' shown';
+ dcount.textContent=D.docs.length+' releases';
+}
+document.getElementById('q').addEventListener('input',render);
+document.querySelectorAll('.chip').forEach(c=>c.addEventListener('click',()=>{
+ document.querySelectorAll('.chip').forEach(x=>x.setAttribute('aria-pressed','false'));
+ c.setAttribute('aria-pressed','true');AG=c.dataset.a;render();}));
+/* media */
+const hot=new Set(['DOD_111764189-1920x1080-9000k','DOD_111764213-1920x1080-9000k']);
+media.innerHTML=D.media.map(m=>`<div class="card"><span class="rid">${m.id}</span><div class="d">${m.d.toFixed(1)}s</div><div class="m">${m.res} &middot; ${m.fps} fps &middot; ${(m.b/1048576).toFixed(1)} MB<br>encoded ${m.ct}</div>${hot.has(m.id)?'<span class="tag hot">Western US Event</span>':''}${m.id.includes('111887')?'<span class="tag">Sensor family 8/6</span>':''}</div>`).join('');
+render();
+</script></body></html>

@@ -1,0 +1,4 @@
+sources/
+*.mp4
+*.zip
+__pycache__/
