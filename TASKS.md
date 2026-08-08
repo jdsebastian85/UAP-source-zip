@@ -221,6 +221,38 @@ CSV row; no derived or inferred values on any page; no `working_*` URL in the ou
 
 ---
 
+## T9. Investigator tool — built 2026-08-08, `investigate.html`
+
+The private counterpart to the public reader. Built by `scripts/build_investigator.py`
+from `site/investigator.html`. 1.5 MB, phone-first, no external requests except the Drive
+player iframe.
+
+What it does: browse 211 documents with gap counts, read any of the 8,661 pages with the
+text source labeled (`TEXT_LAYER` and `OCR_RECOVERED` shown as separate blocks, never
+merged), 133 media files grouped by family with the triage strip and a one-tap Drive open,
+6,155 entity groups where a cite jumps straight to the page with the verbatim spelling
+highlighted, and stars plus notes on any document, page, media file or entity.
+
+Page text is not embedded — 27 MB would kill it on a phone. The build emits a byte-offset
+index into `spine/pages.jsonl` and the app fetches one page per Range request, validating
+that the returned record is the release and page it asked for. If the host ignores Range
+it downloads once, says so, and slices locally.
+
+Still open on it:
+- Notes are localStorage, so per-device. Export from the Marks tab is the only backup.
+- Documents have no open-in-one-tap because they are still inside the zips (T1c). When
+  `doc_links.csv` exists, wire it into the document card the same way media is wired.
+- No full-text search across pages. Entity search covers most of it; a real one wants
+  Pagefind or a prebuilt inverted index, and should wait until after T2 so recovered text
+  is in the index.
+
+**Note before merging:** GitHub Pages serves whatever is on the default branch, so merging
+puts `investigate.html` at a public URL. Nothing in it is secret — the notes are local to
+the browser and never leave the device, and the Drive folder is already shared
+`anyone: reader` — but it is a public URL with no auth, so treat it as discoverable.
+
+---
+
 ## Commercial notes (standing instruction: surface these unprompted)
 
 - The site stays free. The material is public domain and the project's credibility

@@ -1,0 +1,526 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>PURSUE corpus — investigator</title>
+<style>
+:root{
+  --bg:#fbfaf8; --panel:#fff; --line:#e3ded6; --ink:#1e1c1a; --dim:#6d6459;
+  --accent:#8a4b2a; --accent-soft:#f3e7df; --mark:#fde8b8; --warn:#8a2a2a;
+  --radius:10px; --pad:14px;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --bg:#16151a; --panel:#1e1d23; --line:#33313a; --ink:#eae7e2; --dim:#9a938a;
+    --accent:#d9926a; --accent-soft:#2e2620; --mark:#4a3d1c; --warn:#e08a8a;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#16151a; --panel:#1e1d23; --line:#33313a; --ink:#eae7e2; --dim:#9a938a;
+  --accent:#d9926a; --accent-soft:#2e2620; --mark:#4a3d1c; --warn:#e08a8a;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{
+  background:var(--bg); color:var(--ink); font:16px/1.5 ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  -webkit-text-size-adjust:100%; overflow-x:hidden;
+}
+a{color:var(--accent)}
+header{
+  position:sticky; top:0; z-index:20; background:var(--bg);
+  border-bottom:1px solid var(--line); padding:8px var(--pad) 0;
+  padding-top:calc(8px + env(safe-area-inset-top));
+}
+.hrow{display:flex; gap:8px; align-items:center}
+.hrow h1{font-size:15px; margin:0 auto 0 0; font-weight:650; letter-spacing:.2px}
+.hrow .sub{font-size:11px; color:var(--dim); font-weight:400}
+input[type=search],input[type=text],textarea{
+  width:100%; font:inherit; color:var(--ink); background:var(--panel);
+  border:1px solid var(--line); border-radius:var(--radius); padding:9px 11px;
+}
+input[type=search]{margin:8px 0}
+textarea{min-height:76px; resize:vertical; line-height:1.45}
+nav{display:flex; gap:2px; overflow-x:auto; scrollbar-width:none}
+nav::-webkit-scrollbar{display:none}
+nav button{
+  flex:0 0 auto; font:inherit; font-size:13px; background:none; color:var(--dim);
+  border:none; border-bottom:2px solid transparent; padding:9px 11px; cursor:pointer;
+}
+nav button[aria-selected=true]{color:var(--ink); border-bottom-color:var(--accent); font-weight:600}
+main{padding:var(--pad); padding-bottom:calc(48px + env(safe-area-inset-bottom)); max-width:900px; margin:0 auto}
+.card{
+  background:var(--panel); border:1px solid var(--line); border-radius:var(--radius);
+  padding:11px 12px; margin-bottom:9px;
+}
+.card.tap{cursor:pointer}
+.card.tap:active{background:var(--accent-soft)}
+.t{font-weight:600; font-size:14.5px; word-break:break-word}
+.m{font-size:12px; color:var(--dim); margin-top:3px; word-break:break-word}
+.m b{color:var(--ink); font-weight:600}
+.pill{
+  display:inline-block; font-size:10.5px; padding:1.5px 6px; border-radius:99px;
+  border:1px solid var(--line); color:var(--dim); margin-right:4px; white-space:nowrap;
+}
+.pill.on{background:var(--accent-soft); color:var(--accent); border-color:transparent; font-weight:600}
+.pill.warn{color:var(--warn); border-color:var(--warn)}
+.rowbtns{display:flex; gap:7px; flex-wrap:wrap; margin-top:9px}
+button.act{
+  font:inherit; font-size:13px; background:var(--panel); color:var(--ink);
+  border:1px solid var(--line); border-radius:8px; padding:7px 11px; cursor:pointer;
+}
+button.act.primary{background:var(--accent); color:#fff; border-color:transparent}
+button.act:active{opacity:.7}
+.star{
+  font:inherit; font-size:17px; line-height:1; background:none; border:none; cursor:pointer;
+  color:var(--dim); padding:2px 4px;
+}
+.star.on{color:var(--accent)}
+.head{display:flex; align-items:flex-start; gap:8px}
+.head .t{flex:1}
+.back{
+  font:inherit; font-size:13px; background:none; border:none; color:var(--accent);
+  padding:0 0 10px; cursor:pointer;
+}
+.grid{display:grid; grid-template-columns:repeat(auto-fill,minmax(150px,1fr)); gap:9px}
+.thumb{width:100%; aspect-ratio:16/9; object-fit:cover; border-radius:6px; background:var(--accent-soft); display:block}
+.embed{width:100%; aspect-ratio:16/9; border:1px solid var(--line); border-radius:var(--radius); background:#000}
+.pagetext{
+  white-space:pre-wrap; word-break:break-word; font:13px/1.62 ui-monospace,SFMono-Regular,Menlo,monospace;
+  background:var(--panel); border:1px solid var(--line); border-radius:var(--radius);
+  padding:12px; max-height:62vh; overflow:auto;
+}
+mark{background:var(--mark); color:inherit; border-radius:2px; padding:0 1px}
+.src{
+  font-size:10.5px; letter-spacing:.5px; text-transform:uppercase; color:var(--dim);
+  font-weight:700; margin:14px 0 5px;
+}
+.empty{color:var(--dim); font-size:13.5px; padding:22px 4px; text-align:center}
+.note{font-size:13px; white-space:pre-wrap; margin-top:7px; color:var(--ink); word-break:break-word}
+.count{font-size:12px; color:var(--dim); margin:0 0 10px}
+.warnbox{
+  border:1px solid var(--warn); color:var(--warn); border-radius:var(--radius);
+  padding:10px 12px; font-size:13px; margin-bottom:10px;
+}
+.pagenav{display:flex; gap:7px; align-items:center; margin:10px 0}
+.pagenav .sp{flex:1}
+ul.cites{list-style:none; margin:8px 0 0; padding:0}
+ul.cites li{padding:6px 0; border-top:1px solid var(--line); font-size:13.5px}
+ul.cites li a{text-decoration:none}
+footer{padding:26px var(--pad) 40px; color:var(--dim); font-size:11.5px; max-width:900px; margin:0 auto; line-height:1.6}
+</style>
+</head>
+<body>
+<header>
+  <div class="hrow">
+    <h1>PURSUE investigator <span class="sub" id="stamp"></span></h1>
+    <button class="act" id="theme" title="Theme">◐</button>
+  </div>
+  <input type="search" id="q" placeholder="Search documents, media, entities" autocomplete="off" autocapitalize="none" spellcheck="false">
+  <nav id="tabs"></nav>
+</header>
+<main id="view"></main>
+<footer id="foot"></footer>
+<script>
+const D = __DATA__;
+
+/* ---------- marks: stars + notes, kept in localStorage ---------- */
+const LS = "pursue.marks.v1";
+let M = {};
+try { M = JSON.parse(localStorage.getItem(LS) || "{}"); } catch(e) { M = {}; }
+const saveM = () => { try { localStorage.setItem(LS, JSON.stringify(M)); } catch(e) {
+  alert("Could not save. Browser storage may be full or blocked in private mode."); } };
+const mk = k => M[k] || (M[k] = {star:false, note:"", ts:0});
+const isMarked = k => !!M[k] && (M[k].star || (M[k].note||"").trim());
+function toggleStar(k, label){ const m = mk(k); m.star = !m.star; m.label = label; m.ts = Date.now();
+  if (!m.star && !(m.note||"").trim()) delete M[k]; saveM(); render(); }
+function setNote(k, v, label){ const m = mk(k); m.note = v; m.label = label; m.ts = Date.now();
+  if (!m.star && !v.trim()) delete M[k]; saveM(); }
+
+/* ---------- tiny helpers ---------- */
+const esc = s => String(s==null?"":s).replace(/[&<>"']/g, c => (
+  {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const rxesc = s => String(s).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+const dur = s => { s = Math.round(s); const m = Math.floor(s/60); return m ? m+"m "+(s%60)+"s" : s+"s"; };
+const mb = b => b >= 1e9 ? (b/1e9).toFixed(2)+" GB" : Math.round(b/1e6)+" MB";
+const $ = id => document.getElementById(id);
+
+/* ---------- routing ---------- */
+let T = "docs", Q = "", SEL = null;
+const TABS = [["docs","Documents"],["media","Media"],["ents","Entities"],["marks","Marks"]];
+
+function go(tab, sel){ T = tab; SEL = sel || null; window.scrollTo(0,0); render(); }
+
+/* ---------- page text: byte-range fetch against spine/pages.jsonl ---------- *
+ * The full text layer is 27 MB. Shipping it inside this file would make the
+ * app unusable on a phone, so pages are pulled one at a time using the byte
+ * offsets in D.pidx. A fetched record is validated against the release and
+ * page that were asked for: a mismatch means the index is stale, and the app
+ * says so rather than showing text from the wrong page.                       */
+const pcache = {};
+const DEC = new TextDecoder();
+let fullBuf = null;      // set only if the host ignored Range and sent the whole file
+let noRange = false;
+
+async function getPage(rid, pg){
+  const key = rid+":"+pg;
+  if (pcache[key]) return pcache[key];
+  const row = (D.pidx[rid] || []).find(r => r[0] === pg);
+  if (!row) return {err:"No page record for "+rid+" p."+pg+" in the index."};
+  const [, off, len] = row;
+
+  let bytes;
+  if (fullBuf) {
+    bytes = new Uint8Array(fullBuf, off, len);
+  } else {
+    let res;
+    try {
+      res = await fetch("spine/pages.jsonl", {headers:{Range:"bytes="+off+"-"+(off+len-1)}});
+    } catch(e) { return {err:"Could not fetch page text: "+e.message+
+        ". Opening this file straight from disk will do that — it needs to be served over http."}; }
+    if (!res.ok) return {err:"Fetching spine/pages.jsonl returned HTTP "+res.status+"."};
+    const buf = await res.arrayBuffer();
+    if (res.status === 206) {
+      bytes = new Uint8Array(buf);
+    } else {
+      // Host ignored the Range header and sent all 27 MB. Keep it and slice
+      // locally, so this costs one download instead of one per page.
+      fullBuf = buf; noRange = true;
+      bytes = new Uint8Array(fullBuf, off, len);
+    }
+  }
+
+  let rec;
+  try { rec = JSON.parse(DEC.decode(bytes)); }
+  catch(e) { return {err:"Page record did not parse. The index is stale — re-run scripts/build_investigator.py."}; }
+  if (rec.release_id !== rid || rec.pdf_page !== pg) return {err:
+    "Index points at "+rec.release_id+" p."+rec.pdf_page+" but "+rid+" p."+pg+" was requested. "+
+    "The index is stale — re-run scripts/build_investigator.py."};
+  return (pcache[key] = rec);
+}
+
+/* ---------- views ---------- */
+function starBtn(k, label){
+  return `<button class="star ${M[k]&&M[k].star?"on":""}" data-star="${esc(k)}" data-label="${esc(label)}"
+    aria-label="Mark">${M[k]&&M[k].star?"★":"☆"}</button>`;
+}
+function noteBox(k, label){
+  const n = (M[k]&&M[k].note)||"";
+  return `<div class="src">Note</div>
+    <textarea data-note="${esc(k)}" data-label="${esc(label)}"
+      placeholder="Kept on this device only. Export from the Marks tab.">${esc(n)}</textarea>`;
+}
+
+function docsView(){
+  const q = Q.toLowerCase();
+  const rows = D.docs.filter(d => !q || (d.id+" "+d.s).toLowerCase().includes(q));
+  return `<p class="count">${rows.length} of ${D.docs.length} documents</p>` + (rows.length ? rows.map(d => `
+    <div class="card tap" data-go="doc:${esc(d.id)}">
+      <div class="head">
+        <div class="t">${esc(d.id)}</div>
+        ${starBtn("doc:"+d.id, d.id)}
+      </div>
+      <div class="m">${esc(d.s) || "<i>no subject in metadata</i>"}</div>
+      <div class="m"><span class="pill">${d.p} pp</span>
+        <span class="pill">OCR ${d.q}</span>
+        ${d.y?`<span class="pill">${d.y}</span>`:""}
+        ${d.gnt?`<span class="pill warn">${d.gnt} no text</span>`:""}
+        ${d.gr?`<span class="pill warn">${d.gr} redaction</span>`:""}
+        ${isMarked("doc:"+d.id)?`<span class="pill on">marked</span>`:""}
+      </div>
+    </div>`).join("") : `<p class="empty">Nothing matches “${esc(Q)}”.</p>`);
+}
+
+function docView(id){
+  const d = D.docs.find(x => x.id === id);
+  if (!d) return `<p class="empty">Unknown document.</p>`;
+  const segs = (D.segs[id]||[]);
+  const pages = (D.pidx[id]||[]).map(r => r[0]);
+  const gaps = d.gaps || {};
+  return `<button class="back" data-go="docs">← Documents</button>
+    <div class="card">
+      <div class="head"><div class="t">${esc(d.id)}</div>${starBtn("doc:"+d.id, d.id)}</div>
+      <div class="m">${esc(d.s)||"<i>no subject in metadata</i>"}</div>
+      <div class="m" style="margin-top:7px">
+        <span class="pill">${d.p} pages</span>
+        <span class="pill">mean OCR ${d.q}</span>
+        ${d.y?`<span class="pill">${d.y}</span>`:""}
+      </div>
+      <div class="m" style="margin-top:7px">${
+        Object.keys(gaps).length
+          ? Object.entries(gaps).map(([k,v]) => `<span class="pill warn">${esc(k)} ${v}</span>`).join("")
+          : `<span class="pill">no gaps logged</span>`}</div>
+      <div class="m" style="margin-top:9px">No <b>source_url</b> or <b>mirror_url</b> yet, and no working link:
+        the release PDFs are still inside the Drive zips, so there is nothing to open externally.</div>
+      ${noteBox("doc:"+d.id, d.id)}
+    </div>
+    ${segs.length ? `<div class="src">Records in this release (${segs.length})</div>` + segs.map(s => `
+      <div class="card tap" data-go="page:${esc(id)}:${s.a}">
+        <div class="t" style="font-size:13.5px">${esc(s.sub)||"<i>no subject line</i>"}</div>
+        <div class="m">pp. ${s.a}–${s.b}${s.d?" · "+esc(s.d):""}${s.r?" · "+esc(s.r):""}</div>
+      </div>`).join("") : ""}
+    <div class="src">Pages (${pages.length})</div>
+    <div class="card"><div class="rowbtns">${
+      pages.map(p => `<button class="act" data-go="page:${esc(id)}:${p}">${p}${
+        isMarked("page:"+id+":"+p) ? " ★" : ""}</button>`).join("")}</div></div>`;
+}
+
+async function pageView(id, pg){
+  const k = "page:"+id+":"+pg, label = id+" p."+pg;
+  const pages = (D.pidx[id]||[]).map(r => r[0]);
+  const i = pages.indexOf(pg);
+  const ocr = (D.ocr[id]||{})[pg];
+  $("view").innerHTML = `<button class="back" data-go="doc:${esc(id)}">← ${esc(id)}</button>
+    <div class="card"><div class="head"><div class="t">${esc(id)} · page ${pg}</div>${starBtn(k,label)}</div>
+    <div class="m">Loading page text…</div></div>`;
+  const rec = await getPage(id, pg);
+  const hl = SEL && SEL.hl ? SEL.hl : "";
+  const slow = noRange ? `<div class="warnbox">This host does not serve byte ranges, so the whole
+    27 MB text file was downloaded once. Pages are instant from here on, but a reload pays it again.</div>` : "";
+  const body = rec.err
+    ? `<div class="warnbox">${esc(rec.err)}</div>`
+    : (rec.text || "").trim()
+      ? `<div class="src">Text layer — TEXT_LAYER (publisher's OCR, shipped in the PDF)</div>
+         <div class="pagetext">${highlight(rec.text, hl)}</div>`
+      : `<div class="src">Text layer — TEXT_LAYER</div>
+         <div class="card"><div class="m">This page carries no text layer. Logged as a gap, which
+         records only that the layer is absent — not that the page is blank.</div></div>`;
+  const meta = rec.err ? "" : `<div class="m" style="margin-top:9px">
+      <span class="pill">${rec.char_count} chars</span>
+      <span class="pill">OCR ${rec.ocr_quality}</span>
+      ${rec.no_text_layer?`<span class="pill warn">NO_TEXT_LAYER</span>`:""}
+      ${(rec.markings||[]).map(m=>`<span class="pill">${esc(m)}</span>`).join("")}
+      ${(rec.redaction_markers||[]).length?`<span class="pill warn">${rec.redaction_markers.length} redaction marker(s)</span>`:""}
+      ${rec.doc_id_stamp?`<span class="pill">${esc(rec.doc_id_stamp)}</span>`:""}
+    </div>`;
+  $("view").innerHTML = `<button class="back" data-go="doc:${esc(id)}">← ${esc(id)}</button>
+    <div class="card">
+      <div class="head"><div class="t">${esc(id)} · page ${pg}</div>${starBtn(k,label)}</div>
+      ${meta}
+      ${noteBox(k, label)}
+    </div>
+    <div class="pagenav">
+      ${i>0?`<button class="act" data-go="page:${esc(id)}:${pages[i-1]}">← p.${pages[i-1]}</button>`:""}
+      <span class="sp"></span>
+      ${i>=0&&i<pages.length-1?`<button class="act" data-go="page:${esc(id)}:${pages[i+1]}">p.${pages[i+1]} →</button>`:""}
+    </div>
+    ${slow}
+    ${body}
+    ${ocr ? `<div class="src">Recovered locally — OCR_RECOVERED (never merged with the text layer)</div>
+      <div class="pagetext">${highlight(ocr, hl)}</div>` : ""}`;
+  wire();
+}
+
+function highlight(text, hl){
+  const safe = esc(text);
+  if (!hl) return safe;
+  try { return safe.replace(new RegExp(rxesc(esc(hl)), "gi"), m => "<mark>"+m+"</mark>"); }
+  catch(e) { return safe; }
+}
+
+function mediaView(){
+  const q = Q.toLowerCase();
+  const rows = D.media.filter(m => !q || (m.id+" "+m.fam).toLowerCase().includes(q));
+  const fams = {};
+  rows.forEach(m => (fams[m.fam] = fams[m.fam] || []).push(m));
+  return `<p class="count">${rows.length} of ${D.media.length} media files ·
+    ${D.media.filter(m=>m.st!=="INDEXED").length} in Drive awaiting ingest</p>` +
+    (rows.length ? Object.entries(fams).map(([f, list]) => `
+      <div class="src">${esc(f)} (${list.length})</div>
+      <div class="grid">${list.map(m => `
+        <div class="card tap" data-go="med:${esc(m.id)}" style="padding:8px">
+          ${m.th?`<img class="thumb" loading="lazy" src="spine/${esc(m.th)}" alt="">`:`<div class="thumb"></div>`}
+          <div class="t" style="font-size:12px; margin-top:6px">${esc(m.id)}</div>
+          <div class="m">${m.st==="INDEXED"?dur(m.d)+" · "+esc(m.res):`<span class="pill warn">not ingested</span>`}
+            ${isMarked("med:"+m.id)?` <span class="pill on">marked</span>`:""}</div>
+        </div>`).join("")}</div>`).join("")
+    : `<p class="empty">Nothing matches “${esc(Q)}”.</p>`);
+}
+
+function medView(id){
+  const m = D.media.find(x => x.id === id);
+  if (!m) return `<p class="empty">Unknown media file.</p>`;
+  const k = "med:"+id;
+  return `<button class="back" data-go="media">← Media</button>
+    <div class="card">
+      <div class="head"><div class="t">${esc(m.id)}</div>${starBtn(k, m.id)}</div>
+      <div class="m"><span class="pill">${esc(m.fam)}</span>
+        ${m.st==="INDEXED"
+          ? `<span class="pill">${dur(m.d)}</span><span class="pill">${esc(m.res)}</span>
+             <span class="pill">${esc(m.fps)} fps</span><span class="pill">${mb(m.b)}</span>
+             <span class="pill">encoded ${esc(m.ct)}</span>`
+          : `<span class="pill warn">NOT_INGESTED</span>`}</div>
+      ${m.st!=="INDEXED" ? `<div class="m" style="margin-top:7px">In the Drive folder with no row in
+        <b>media.csv</b>. No duration, resolution or hash has been measured, so nothing is claimed
+        about it beyond the file existing.</div>` : ""}
+      <div class="rowbtns">
+        <a class="act primary" href="${esc(m.v)}" target="_blank" rel="noopener">Open in Drive</a>
+        <a class="act" href="${esc(m.dl)}" target="_blank" rel="noopener">Download</a>
+      </div>
+      <div class="m" style="margin-top:9px">Working link only. Drive is access, not provenance:
+        no <b>source_url</b> (war.gov) or <b>mirror_url</b> (archive.org) is recorded yet, so nothing
+        here is citable.</div>
+      ${noteBox(k, m.id)}
+    </div>
+    <iframe class="embed" src="${esc(m.e)}" allow="autoplay" referrerpolicy="no-referrer"></iframe>
+    ${m.th?`<div class="src">Triage strip</div><img class="thumb" style="aspect-ratio:auto"
+      src="spine/${esc(m.th)}" alt="Contact sheet for ${esc(m.id)}">`:""}`;
+}
+
+function entsView(){
+  const q = Q.toLowerCase();
+  const rows = (q ? D.ents.filter(e =>
+      e.v.toLowerCase().includes(q) || e.vv.some(v => v.toLowerCase().includes(q)))
+    : D.ents).slice(0, 400);
+  return `<p class="count">${D.ents.length} entity groups from ${D.etotal} mentions.
+    Regex candidates, not a verified roster.</p>` + (rows.length ? rows.map((e, i) => `
+    <div class="card tap" data-go="ent:${e.i}">
+      <div class="head"><div class="t">${esc(e.v)}</div>${starBtn("ent:"+e.i, e.v)}</div>
+      <div class="m"><span class="pill">${esc(e.t)}</span>
+        <span class="pill">${e.n} mention${e.n>1?"s":""}</span>
+        ${e.f!=="CLEAN"?`<span class="pill warn">${esc(e.f)}</span>`:""}
+        ${e.vv.length>1?`<span class="pill">${e.vv.length} spellings</span>`:""}</div>
+    </div>`).join("") + (!q && D.ents.length > 400
+      ? `<p class="empty">Showing the 400 most-mentioned. Search to reach the rest.</p>` : "")
+    : `<p class="empty">Nothing matches “${esc(Q)}”.</p>`);
+}
+
+function entView(i){
+  const e = D.ents[i];
+  if (!e) return `<p class="empty">Unknown entity.</p>`;
+  const k = "ent:"+i;
+  return `<button class="back" data-go="ents">← Entities</button>
+    <div class="card">
+      <div class="head"><div class="t">${esc(e.v)}</div>${starBtn(k, e.v)}</div>
+      <div class="m"><span class="pill">${esc(e.t)}</span>
+        <span class="pill">${e.n} mentions</span>
+        ${e.f!=="CLEAN"?`<span class="pill warn">${esc(e.f)}</span>`:""}</div>
+      ${e.vv.length>1?`<div class="m" style="margin-top:7px">Verbatim spellings:
+        ${e.vv.map(v=>`<span class="pill">${esc(v)}</span>`).join("")}</div>`:""}
+      <div class="m" style="margin-top:9px">A row here is a pattern match on a page, not a verified
+        identification. Open the cite and read the page.</div>
+      ${noteBox(k, e.v)}
+    </div>
+    <div class="src">Cites (${e.c.length})</div>
+    <div class="card"><ul class="cites">${e.c.map(c => {
+      const [rid, pg] = c.split(":");
+      return `<li><a href="#" data-go="page:${esc(rid)}:${pg}" data-hl="${esc(e.vv[0])}">${esc(rid)} · p.${pg}</a></li>`;
+    }).join("")}</ul></div>`;
+}
+
+function marksView(){
+  const keys = Object.keys(M).filter(k => isMarked(k))
+    .sort((a,b) => (M[b].ts||0) - (M[a].ts||0));
+  const body = keys.length ? keys.map(k => {
+    const m = M[k], [kind] = k.split(":");
+    const target = kind === "doc" ? "doc:"+k.slice(4)
+      : kind === "med" ? "med:"+k.slice(4)
+      : kind === "ent" ? "ent:"+k.slice(4)
+      : k;
+    return `<div class="card">
+      <div class="head">
+        <div class="t" style="font-size:13.5px"><a href="#" data-go="${esc(target)}">${esc(m.label||k)}</a></div>
+        ${starBtn(k, m.label||k)}
+      </div>
+      <div class="m"><span class="pill">${esc(kind)}</span>
+        <span class="pill">${new Date(m.ts||0).toISOString().slice(0,10)}</span></div>
+      ${(m.note||"").trim()?`<div class="note">${esc(m.note)}</div>`:""}
+    </div>`;
+  }).join("") : `<p class="empty">Nothing marked yet. Star anything, or leave a note on it.</p>`;
+  return `<p class="count">${keys.length} marked. Stored in this browser only — export before
+    clearing site data or switching devices.</p>
+    <div class="card"><div class="rowbtns">
+      <button class="act primary" id="exp">Export JSON</button>
+      <button class="act" id="imp">Import JSON</button>
+      <button class="act" id="clr">Clear all</button>
+    </div></div>` + body;
+}
+
+/* ---------- render + events ---------- */
+function render(){
+  $("tabs").innerHTML = TABS.map(([k, lab]) =>
+    `<button data-tab="${k}" aria-selected="${T===k}">${lab}</button>`).join("");
+  const v = $("view");
+  if (T === "docs")  v.innerHTML = SEL ? docView(SEL.id) : docsView();
+  else if (T === "media") v.innerHTML = SEL ? medView(SEL.id) : mediaView();
+  else if (T === "ents")  v.innerHTML = SEL ? entView(SEL.i) : entsView();
+  else if (T === "marks") v.innerHTML = marksView();
+  else if (T === "page")  { pageView(SEL.id, SEL.pg); return; }
+  wire();
+}
+
+function wire(){
+  document.querySelectorAll("[data-go]").forEach(el => {
+    el.onclick = ev => {
+      ev.preventDefault(); ev.stopPropagation();
+      const [kind, a, b] = el.dataset.go.split(":");
+      const hl = el.dataset.hl || "";
+      if (kind === "doc")  go("docs", {id:a});
+      else if (kind === "docs")  go("docs");
+      else if (kind === "media") go("media");
+      else if (kind === "ents")  go("ents");
+      else if (kind === "med")   go("media", {id:a});
+      else if (kind === "ent")   go("ents", {i:+a});
+      else if (kind === "page")  go("page", {id:a, pg:+b, hl});
+    };
+  });
+  document.querySelectorAll("[data-star]").forEach(el => {
+    el.onclick = ev => { ev.preventDefault(); ev.stopPropagation();
+      toggleStar(el.dataset.star, el.dataset.label); };
+  });
+  document.querySelectorAll("[data-note]").forEach(el => {
+    el.onclick = ev => ev.stopPropagation();
+    el.oninput = () => setNote(el.dataset.note, el.value, el.dataset.label);
+  });
+  if ($("exp")) $("exp").onclick = () => {
+    const blob = new Blob([JSON.stringify(M, null, 2)], {type:"application/json"});
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = "pursue-marks-" + new Date().toISOString().slice(0,10) + ".json";
+    a.click(); URL.revokeObjectURL(a.href);
+  };
+  if ($("imp")) $("imp").onclick = () => {
+    const inp = document.createElement("input");
+    inp.type = "file"; inp.accept = "application/json";
+    inp.onchange = async () => {
+      try {
+        const incoming = JSON.parse(await inp.files[0].text());
+        let n = 0;
+        for (const [k, v] of Object.entries(incoming)) {
+          const cur = M[k];
+          if (!cur || (v.ts||0) > (cur.ts||0)) { M[k] = v; n++; }
+        }
+        saveM(); render();
+        alert("Merged " + n + " mark(s). Newer timestamps win; nothing was deleted.");
+      } catch(e) { alert("Could not read that file: " + e.message); }
+    };
+    inp.click();
+  };
+  if ($("clr")) $("clr").onclick = () => {
+    if (confirm("Delete every star and note in this browser? Export first if you want them.")) {
+      M = {}; saveM(); render();
+    }
+  };
+}
+
+$("tabs").onclick = ev => { const b = ev.target.closest("[data-tab]"); if (b) go(b.dataset.tab); };
+$("q").oninput = ev => { Q = ev.target.value.trim(); SEL = null;
+  if (T === "page" || T === "marks") T = "docs"; render(); };
+$("theme").onclick = () => {
+  const cur = document.documentElement.getAttribute("data-theme");
+  const next = cur === "dark" ? "light" : cur === "light" ? null : "dark";
+  if (next) document.documentElement.setAttribute("data-theme", next);
+  else document.documentElement.removeAttribute("data-theme");
+};
+
+$("stamp").textContent = D.built;
+$("foot").innerHTML = `Built from the spine at ${esc(D.built)}: ${D.docs.length} documents,
+  ${D.npages} pages, ${D.media.length} media files, ${D.etotal} entity mentions.
+  Page text is fetched from <code>spine/pages.jsonl</code> as needed.<br><br>
+  This is the working tool, not the public record. Media links point at one private Drive
+  account and are access only. Entity rows are regex candidates. Contradictions in the corpus
+  are kept side by side and are not resolved here.`;
+render();
+</script>
+</body>
+</html>

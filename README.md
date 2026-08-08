@@ -36,8 +36,31 @@ scripts/
   fetch_sources.py   idempotent Drive pull, diffs against what is already ingested
   track_object.py    per-frame blob tracking, pixel coordinates only
   build_site.py      regenerate the public reader from current CSVs
-site/          static single-file reader, deploys to GitHub Pages as-is
+  build_investigator.py  regenerate the private working tool
+site/          templates for both builds
+index.html     public reader — the credibility artifact, no Drive links
+investigate.html   working tool — Drive links, page reader, stars and notes
 ```
+
+## Two front ends, on purpose
+
+`index.html` is built for a skeptical stranger. It leads with `source_url` and
+`mirror_url` and carries no Drive link, because a link into one person's Drive is not
+a citation.
+
+`investigate.html` is built for the project owner. It leads with the working Drive
+links, opens a clip in one tap, jumps from an entity mention to the page it sits on,
+and keeps stars and notes. Both read the same spine; neither writes to it.
+
+```bash
+python3 scripts/build_investigator.py    # writes investigate.html
+python3 -m http.server 8000              # then open /investigate.html
+```
+
+It must be served over http, not opened from disk: page text is pulled from
+`spine/pages.jsonl` by byte offset, and a `file://` page cannot fetch. Stars and notes
+live in browser localStorage, so they are per-device and per-browser — export them
+from the Marks tab before clearing site data.
 
 **The snapshot contains derived data only.** Source PDFs and videos are not in it and
 must be re-pulled before any OCR, visual, or citation-verification work:
