@@ -1,0 +1,97 @@
+# spine/aliases.yml — alias clusters for query-time search expansion (T3b.2)
+#
+# A cluster is a retrieval hint. It never licenses stating that two spellings
+# are the same person. Site copy says "also matches" and never "same as".
+# Nothing in this file is ever written back into a CSV.
+#
+# Every member carries a page cite (cites[i] belongs to members[i]).
+# reviewed_by stays empty until a person has looked at the cited pages.
+# confidence: unreviewed | confirmed | disputed
+#
+# This file is hand-maintained. Seeded 2026-08-08 from entities_normalized.csv;
+# excluded lookalike candidates are noted per cluster so a reviewer can promote
+# them deliberately rather than by script.
+
+- cluster: garrett
+  members: ["Garrett", "Garret", "Ga.rrett", "Ga.rl'ett", "Oarret.t", "Oarret-t", "Gerrett", "Ge.rrett", "Garre"]
+  cites: ["DOW-UAP-D100:38", "DOW-UAP-D100:66", "DOW-UAP-D100:123", "18-6369445-General-1948-Vol-1.pdf:26", "65-HS1-834228961-62-HQ-83894-Section-3.pdf:164", "DOW-UAP-D100:221", "DOW-UAP-D100:185", "DOW-UAP-D100:100", "DOW-UAP-D100:40"]
+  basis: "OCR variants of a surname appearing in the same routing blocks"
+  reviewed_by: ""
+  confidence: unreviewed
+  # not included, for review: Carrett (DOW-UAP-D100:87), Garrott
+  # (18-100754--General-1946-7-Vol-2.pdf:24), Grurett (same file:23), Perrett
+  # (65-HS1...SUB-A.pdf:65), PARROTT (65-HS1...Section-4.pdf:157)
+
+- cluster: schirra
+  members: ["Schirra"]
+  cites: ["NASA-UAP-D015-Astronaut-Scientific-Debriefings-1962-1963.pdf:96"]
+  basis: "single spelling; rank prefixes Cdr/Cmdr/Lt Cmdr were scattered before T3b.3 rank normalization"
+  reviewed_by: ""
+  confidence: unreviewed
+
+- cluster: lapaz
+  members: ["LaPaz", "La.Paz", "LaPa.z", "La Paz", "Le.Paz", "LePaz", "IaPaz", "LaPe.z", "LaPnz", "LaPo.z", "La.Po.z", "Lo.Paz", "Le.Po.z", "LllPaz", "LaI'az", "Lal'ez", "LaPar", "LaPa", "La.Pa", "La.Po"]
+  cites: ["DOE-UAP-D004:2", "DOE-UAP-D004:2", "DOE-UAP-D004:6", "65-HS1-834228961-62-HQ-83894-Section-8.pdf:42", "DOE-UAP-D004:7", "DOE-UAP-D004:11", "DOE-UAP-D004:2", "DOE-UAP-D004:4", "DOE-UAP-D004:15", "DOE-UAP-D004:9", "DOE-UAP-D004:21", "DOE-UAP-D004:13", "DOE-UAP-D004:12", "DOE-UAP-D004:11", "DOE-UAP-D004:14", "DOE-UAP-D004:16", "DOE-UAP-D004:22", "65-HS1-834228961-62-HQ-83894-Section-6.pdf:2", "DOE-UAP-D004:23", "DOE-UAP-D004:3"]
+  basis: "dot and letterform manglings of one name concentrated in the Sandia correspondence pages; CONTEXT_BRIEF.md documents the OCR name-splitting"
+  reviewed_by: ""
+  confidence: unreviewed
+  # not included, for review: LaFa.a (DOE-UAP-D004:21), LaPu (DOW-UAP-D017:91),
+  # J'..a.Pa (DOE-UAP-D004:10), Lantz (65-HS1...Section-3.pdf:55, plausible
+  # distinct surname), La.van (65-HS1...Section-7.pdf:116)
+
+- cluster: springer
+  members: ["Springer", "SPRmGER"]
+  cites: ["65-HS1-834228961-62-HQ-83894-Section-3.pdf:4", "65-HS1-834228961-62-HQ-83894-Section-2.pdf:180"]
+  basis: "rn/m letterform confusion of one surname within the same FBI file"
+  reviewed_by: ""
+  confidence: unreviewed
+
+- cluster: steiner
+  members: ["Steiner", "SteTer"]
+  cites: ["DOW-UAP-D092:2", "DOW-UAP-D092:15"]
+  basis: "letterform mangling within the same release"
+  reviewed_by: ""
+  confidence: unreviewed
+  # not included, for review: Stever (DOW-UAP-D092:6, x9) — attested distinct
+  # surname; appears in the same release as Steiner, so review must read pages
+
+- cluster: omara
+  members: ["O'Mara"]
+  cites: ["65-HS1-834228961-62-HQ-83894-Section-8.pdf:40"]
+  basis: "single spelling; case and possessive forms match by substring"
+  reviewed_by: ""
+  confidence: unreviewed
+  # not included, for review: Maria, Sara, Cara, Gara, Mary — common distinct
+  # names within edit distance, excluded deliberately
+
+- cluster: geary
+  members: ["Geary"]
+  cites: ["CIA-UAP-003-THE-CENTRAL-INTELLIGENCE-AGENCY-AND-OVERHEAD-RECONNAISSANCE-THE-U-2-AND-OXCART-PROGRAMS-1954-1974.pdf:74"]
+  basis: "single spelling found"
+  reviewed_by: ""
+  confidence: unreviewed
+  # not included, for review: Gray, Perry, Henry, Berry, Garry, Keay, Meany,
+  # Geor — common distinct names within edit distance, excluded deliberately
+
+- cluster: ledford
+  members: ["Ledford"]
+  cites: ["CIA-UAP-003-THE-CENTRAL-INTELLIGENCE-AGENCY-AND-OVERHEAD-RECONNAISSANCE-THE-U-2-AND-OXCART-PROGRAMS-1954-1974.pdf:220"]
+  basis: "single spelling found"
+  reviewed_by: ""
+  confidence: unreviewed
+  # not included, for review: Radford (same CIA history file:135) — attested
+  # distinct surname
+
+- cluster: goodpaster
+  members: ["Goodpaster"]
+  cites: ["CIA-UAP-003-THE-CENTRAL-INTELLIGENCE-AGENCY-AND-OVERHEAD-RECONNAISSANCE-THE-U-2-AND-OXCART-PROGRAMS-1954-1974.pdf:110"]
+  basis: "single spelling found"
+  reviewed_by: ""
+  confidence: unreviewed
+
+- cluster: doolittle
+  members: ["Doolittle"]
+  cites: ["DOW-UAP-D099:4"]
+  basis: "single spelling found; possessive form matches by substring"
+  reviewed_by: ""
+  confidence: unreviewed
