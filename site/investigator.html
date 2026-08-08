@@ -124,10 +124,83 @@ footer{padding:26px var(--pad) 40px; color:var(--dim); font-size:11.5px; max-wid
 <script>
 const D = __DATA__;
 
-/* ---------- marks: stars + notes, kept in localStorage ---------- */
-const LS = "pursue.marks.v1";
-let M = {};
-try { M = JSON.parse(localStorage.getItem(LS) || "{}"); } catch(e) { M = {}; }
+/* ---------- marks: stars + notes, kept in localStorage ---------- *
+ * A mark key must name the thing it marks, never its position in a list.
+ * Entity order is by mention count, so it shifts every time mentions are
+ * added — a positional key would silently re-point at a different entity
+ * and keep looking right, because the stored label would go stale with it.
+ * Keys are therefore:
+ *   doc:<release_id>            med:<release_id>
+ *   page:<release_id>:<n>       ent:<ENTITY_TYPE>:<value_normalized>
+ * A key that no longer resolves is shown as unresolved. It is never
+ * rebound to whatever now occupies that slot.                              */
+const SCHEMA = "pursue.marks/2";
+const LS = "pursue.marks.v2", LS_V1 = "pursue.marks.v1";
+
+const kDoc = id => "doc:" + id;
+const kMed = id => "med:" + id;
+const kPage = (id, pg) => "page:" + id + ":" + pg;
+const kEnt = e => "ent:" + e.t + ":" + e.v;
+
+const entIndex = {};
+D.ents.forEach((e, i) => { entIndex[e.t + ":" + e.v] = i; });
+
+function parseKey(k){
+  const i = k.indexOf(":");
+  if (i < 0) return {kind:"?"};
+  const kind = k.slice(0, i), rest = k.slice(i + 1);
+  if (kind === "page"){ const j = rest.lastIndexOf(":");
+    return {kind, id:rest.slice(0, j), pg:+rest.slice(j + 1)}; }
+  if (kind === "ent"){ const j = rest.indexOf(":");
+    return {kind, t:rest.slice(0, j), v:rest.slice(j + 1)}; }
+  return {kind, id:rest};
+}
+/* Where a mark points today, or null if the corpus no longer has it. */
+function resolveKey(k){
+  const p = parseKey(k);
+  if (p.kind === "doc") return D.docs.some(d => d.id === p.id) ? "doc:" + p.id : null;
+  if (p.kind === "med") return D.media.some(m => m.id === p.id) ? "med:" + p.id : null;
+  if (p.kind === "page") return (D.pidx[p.id] || []).some(r => r[0] === p.pg)
+    ? "page:" + p.id + ":" + p.pg : null;
+  if (p.kind === "ent"){ const i = entIndex[p.t + ":" + p.v];
+    return i === undefined ? null : "ent:" + i; }
+  return null;
+}
+
+/* v1 stored entities as ent:<array index>. Map those through the current
+   build's ordering. v1 files carry no build stamp, so this assumes they were
+   exported against this build — the import path says so out loud. */
+function migrateV1(obj){
+  const out = {}; let moved = 0, lost = 0;
+  for (const [k, v] of Object.entries(obj || {})){
+    const pos = /^ent:(\d+)$/.exec(k);
+    if (!pos){ out[k] = v; continue; }
+    const e = D.ents[+pos[1]];
+    if (e){ out[kEnt(e)] = Object.assign({}, v, {label:e.v, vv:e.vv}); moved++; }
+    else { out[k] = v; lost++; }
+  }
+  return {marks:out, moved, lost};
+}
+
+let M = {}, migratedNotice = "";
+try {
+  const raw = localStorage.getItem(LS);
+  if (raw) { M = JSON.parse(raw); }
+  else {
+    const old = localStorage.getItem(LS_V1);
+    if (old){
+      const r = migrateV1(JSON.parse(old));
+      M = r.marks;
+      migratedNotice = "Migrated " + Object.keys(M).length + " mark(s) from the old key scheme" +
+        (r.moved ? ", rekeying " + r.moved + " entity mark(s) by type and value" : "") +
+        (r.lost ? ". " + r.lost + " entity mark(s) pointed at a list position that no longer exists "
+                + "and are shown as unresolved" : "") +
+        ". The old copy is left untouched under " + LS_V1 + ".";
+      localStorage.setItem(LS, JSON.stringify(M));
+    }
+  }
+} catch(e) { M = {}; }
+
 const saveM = () => { try { localStorage.setItem(LS, JSON.stringify(M)); } catch(e) {
   alert("Could not save. Browser storage may be full or blocked in private mode."); } };
 const mk = k => M[k] || (M[k] = {star:false, note:"", ts:0});
@@ -218,7 +291,7 @@ function docsView(){
     <div class="card tap" data-go="doc:${esc(d.id)}">
       <div class="head">
         <div class="t">${esc(d.id)}</div>
-        ${starBtn("doc:"+d.id, d.id)}
+        ${starBtn(kDoc(d.id), d.id)}
       </div>
       <div class="m">${esc(d.s) || "<i>no subject in metadata</i>"}</div>
       <div class="m"><span class="pill">${d.p} pp</span>
@@ -226,7 +299,7 @@ function docsView(){
         ${d.y?`<span class="pill">${d.y}</span>`:""}
         ${d.gnt?`<span class="pill warn">${d.gnt} no text</span>`:""}
         ${d.gr?`<span class="pill warn">${d.gr} redaction</span>`:""}
-        ${isMarked("doc:"+d.id)?`<span class="pill on">marked</span>`:""}
+        ${isMarked(kDoc(d.id))?`<span class="pill on">marked</span>`:""}
       </div>
     </div>`).join("") : `<p class="empty">Nothing matches “${esc(Q)}”.</p>`);
 }
@@ -239,7 +312,7 @@ function docView(id){
   const gaps = d.gaps || {};
   return `<button class="back" data-go="docs">← Documents</button>
     <div class="card">
-      <div class="head"><div class="t">${esc(d.id)}</div>${starBtn("doc:"+d.id, d.id)}</div>
+      <div class="head"><div class="t">${esc(d.id)}</div>${starBtn(kDoc(d.id), d.id)}</div>
       <div class="m">${esc(d.s)||"<i>no subject in metadata</i>"}</div>
       <div class="m" style="margin-top:7px">
         <span class="pill">${d.p} pages</span>
@@ -252,7 +325,7 @@ function docView(id){
           : `<span class="pill">no gaps logged</span>`}</div>
       <div class="m" style="margin-top:9px">No <b>source_url</b> or <b>mirror_url</b> yet, and no working link:
         the release PDFs are still inside the Drive zips, so there is nothing to open externally.</div>
-      ${noteBox("doc:"+d.id, d.id)}
+      ${noteBox(kDoc(d.id), d.id)}
     </div>
     ${segs.length ? `<div class="src">Records in this release (${segs.length})</div>` + segs.map(s => `
       <div class="card tap" data-go="page:${esc(id)}:${s.a}">
@@ -262,11 +335,11 @@ function docView(id){
     <div class="src">Pages (${pages.length})</div>
     <div class="card"><div class="rowbtns">${
       pages.map(p => `<button class="act" data-go="page:${esc(id)}:${p}">${p}${
-        isMarked("page:"+id+":"+p) ? " ★" : ""}</button>`).join("")}</div></div>`;
+        isMarked(kPage(id, p)) ? " ★" : ""}</button>`).join("")}</div></div>`;
 }
 
 async function pageView(id, pg){
-  const k = "page:"+id+":"+pg, label = id+" p."+pg;
+  const k = kPage(id, pg), label = id+" p."+pg;
   const pages = (D.pidx[id]||[]).map(r => r[0]);
   const i = pages.indexOf(pg);
   const ocr = (D.ocr[id]||{})[pg];
@@ -332,7 +405,7 @@ function mediaView(){
           ${m.th?`<img class="thumb" loading="lazy" src="spine/${esc(m.th)}" alt="">`:`<div class="thumb"></div>`}
           <div class="t" style="font-size:12px; margin-top:6px">${esc(m.id)}</div>
           <div class="m">${m.st==="INDEXED"?dur(m.d)+" · "+esc(m.res):`<span class="pill warn">not ingested</span>`}
-            ${isMarked("med:"+m.id)?` <span class="pill on">marked</span>`:""}</div>
+            ${isMarked(kMed(m.id))?` <span class="pill on">marked</span>`:""}</div>
         </div>`).join("")}</div>`).join("")
     : `<p class="empty">Nothing matches “${esc(Q)}”.</p>`);
 }
@@ -340,7 +413,7 @@ function mediaView(){
 function medView(id){
   const m = D.media.find(x => x.id === id);
   if (!m) return `<p class="empty">Unknown media file.</p>`;
-  const k = "med:"+id;
+  const k = kMed(id);
   return `<button class="back" data-go="media">← Media</button>
     <div class="card">
       <div class="head"><div class="t">${esc(m.id)}</div>${starBtn(k, m.id)}</div>
@@ -375,7 +448,7 @@ function entsView(){
   return `<p class="count">${D.ents.length} entity groups from ${D.etotal} mentions.
     Regex candidates, not a verified roster.</p>` + (rows.length ? rows.map((e, i) => `
     <div class="card tap" data-go="ent:${e.i}">
-      <div class="head"><div class="t">${esc(e.v)}</div>${starBtn("ent:"+e.i, e.v)}</div>
+      <div class="head"><div class="t">${esc(e.v)}</div>${starBtn(kEnt(e), e.v)}</div>
       <div class="m"><span class="pill">${esc(e.t)}</span>
         <span class="pill">${e.n} mention${e.n>1?"s":""}</span>
         ${e.f!=="CLEAN"?`<span class="pill warn">${esc(e.f)}</span>`:""}
@@ -388,7 +461,7 @@ function entsView(){
 function entView(i){
   const e = D.ents[i];
   if (!e) return `<p class="empty">Unknown entity.</p>`;
-  const k = "ent:"+i;
+  const k = kEnt(e);
   return `<button class="back" data-go="ents">← Entities</button>
     <div class="card">
       <div class="head"><div class="t">${esc(e.v)}</div>${starBtn(k, e.v)}</div>
@@ -411,24 +484,34 @@ function entView(i){
 function marksView(){
   const keys = Object.keys(M).filter(k => isMarked(k))
     .sort((a,b) => (M[b].ts||0) - (M[a].ts||0));
+  let unresolved = 0;
   const body = keys.length ? keys.map(k => {
-    const m = M[k], [kind] = k.split(":");
-    const target = kind === "doc" ? "doc:"+k.slice(4)
-      : kind === "med" ? "med:"+k.slice(4)
-      : kind === "ent" ? "ent:"+k.slice(4)
-      : k;
+    const m = M[k], p = parseKey(k), target = resolveKey(k);
+    if (!target) unresolved++;
+    const title = esc(m.label || k);
     return `<div class="card">
       <div class="head">
-        <div class="t" style="font-size:13.5px"><a href="#" data-go="${esc(target)}">${esc(m.label||k)}</a></div>
+        <div class="t" style="font-size:13.5px">${target
+          ? `<a href="#" data-go="${esc(target)}">${title}</a>`
+          : title}</div>
         ${starBtn(k, m.label||k)}
       </div>
-      <div class="m"><span class="pill">${esc(kind)}</span>
-        <span class="pill">${new Date(m.ts||0).toISOString().slice(0,10)}</span></div>
+      <div class="m"><span class="pill">${esc(p.kind)}</span>
+        ${p.kind==="ent"?`<span class="pill">${esc(p.t)}</span>`:""}
+        <span class="pill">${new Date(m.ts||0).toISOString().slice(0,10)}</span>
+        ${target?"":`<span class="pill warn">unresolved</span>`}</div>
+      ${target?"":`<div class="m">Nothing in this build answers to <code>${esc(k)}</code>.
+        The mark is kept as written and is not re-pointed at anything else.</div>`}
       ${(m.note||"").trim()?`<div class="note">${esc(m.note)}</div>`:""}
     </div>`;
   }).join("") : `<p class="empty">Nothing marked yet. Star anything, or leave a note on it.</p>`;
-  return `<p class="count">${keys.length} marked. Stored in this browser only — export before
-    clearing site data or switching devices.</p>
+  const b = D.build || {};
+  return (migratedNotice ? `<div class="warnbox">${esc(migratedNotice)}</div>` : "") +
+    `<p class="count">${keys.length} marked${unresolved?`, ${unresolved} unresolved`:""}.
+      Stored in this browser only — export before clearing site data or switching devices.<br>
+      Corpus build <b>${esc(b.commit||"unknown")}</b>${b.dirty?" (uncommitted changes)":""},
+      built ${esc(b.built||"?")}. Exports carry this stamp so a later import can tell whether the
+      corpus moved underneath the notes.</p>
     <div class="card"><div class="rowbtns">
       <button class="act primary" id="exp">Export JSON</button>
       <button class="act" id="imp">Import JSON</button>
@@ -473,7 +556,13 @@ function wire(){
     el.oninput = () => setNote(el.dataset.note, el.value, el.dataset.label);
   });
   if ($("exp")) $("exp").onclick = () => {
-    const blob = new Blob([JSON.stringify(M, null, 2)], {type:"application/json"});
+    const payload = {
+      schema: SCHEMA,
+      exported_utc: new Date().toISOString(),
+      corpus_build: D.build || null,
+      marks: M
+    };
+    const blob = new Blob([JSON.stringify(payload, null, 2)], {type:"application/json"});
     const a = document.createElement("a");
     a.href = URL.createObjectURL(blob);
     a.download = "pursue-marks-" + new Date().toISOString().slice(0,10) + ".json";
@@ -483,22 +572,50 @@ function wire(){
     const inp = document.createElement("input");
     inp.type = "file"; inp.accept = "application/json";
     inp.onchange = async () => {
-      try {
-        const incoming = JSON.parse(await inp.files[0].text());
-        let n = 0;
-        for (const [k, v] of Object.entries(incoming)) {
-          const cur = M[k];
-          if (!cur || (v.ts||0) > (cur.ts||0)) { M[k] = v; n++; }
-        }
-        saveM(); render();
-        alert("Merged " + n + " mark(s). Newer timestamps win; nothing was deleted.");
-      } catch(e) { alert("Could not read that file: " + e.message); }
+      let obj;
+      try { obj = JSON.parse(await inp.files[0].text()); }
+      catch(e) { alert("Could not read that file: " + e.message); return; }
+
+      const notes = [];
+      let incoming;
+      if (obj && obj.schema === SCHEMA && obj.marks) {
+        incoming = obj.marks;
+      } else if (obj && obj.schema && obj.marks) {
+        // A newer or unknown schema. Take the marks, say plainly that the
+        // rest of the file was not understood, rather than pretending.
+        incoming = obj.marks;
+        notes.push("File declares schema " + obj.schema + ", this build reads " + SCHEMA +
+          ". The marks were loaded; anything else in the file was ignored.");
+      } else if (obj && !obj.schema && typeof obj === "object") {
+        const r = migrateV1(obj);
+        incoming = r.marks;
+        notes.push("No schema or build stamp, so this is an old export. " +
+          (r.moved ? r.moved + " entity mark(s) were stored by list position and have been " +
+            "rekeyed by type and value, assuming the file came from this build. Check them. " : "") +
+          (r.lost ? r.lost + " pointed at a position that no longer exists. " : ""));
+      } else { alert("That file is not a marks export."); return; }
+
+      const ib = obj.corpus_build, cb = D.build || {};
+      if (ib && ib.commit && cb.commit && ib.commit !== cb.commit)
+        notes.push("Exported against corpus build " + ib.commit + "; this build is " + cb.commit +
+          ". The corpus moved — check anything that now shows as unresolved.");
+
+      let n = 0, skipped = 0;
+      for (const [k, v] of Object.entries(incoming)) {
+        const cur = M[k];
+        if (!cur || (v.ts||0) > (cur.ts||0)) { M[k] = v; n++; } else skipped++;
+      }
+      saveM(); render();
+      const stale = Object.keys(incoming).filter(k => !resolveKey(k)).length;
+      alert("Merged " + n + " mark(s)" + (skipped ? ", kept " + skipped + " newer local copy(s)" : "") +
+        ". Nothing was deleted." + (stale ? "\n\n" + stale + " do not resolve in this build and are " +
+        "listed as unresolved." : "") + (notes.length ? "\n\n" + notes.join("\n\n") : ""));
     };
     inp.click();
   };
   if ($("clr")) $("clr").onclick = () => {
     if (confirm("Delete every star and note in this browser? Export first if you want them.")) {
-      M = {}; saveM(); render();
+      M = {}; migratedNotice = ""; saveM(); render();
     }
   };
 }

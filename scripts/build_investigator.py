@@ -16,7 +16,7 @@ from the wrong page.
 
 Every displayed value traces to a spine row. Nothing is derived or inferred.
 """
-import argparse, csv, json, os, re, glob
+import argparse, csv, json, os, re, glob, subprocess
 from collections import defaultdict
 from datetime import date
 
@@ -45,6 +45,25 @@ def family(rid):
 
 def sp(name):
     return os.path.join(SPINE, name)
+
+
+def git_build():
+    """Stamp the corpus state the marks were made against.
+
+    `commit` is HEAD at build time, so a build run before committing its own
+    changes points at the parent commit; `dirty` says whether the tree had
+    uncommitted changes. Together they answer the only question that matters
+    on import six months later: did the corpus move under these notes.
+    """
+    def run(*a):
+        try:
+            return subprocess.run(a, cwd=ROOT, capture_output=True,
+                                  text=True, timeout=10).stdout.strip()
+        except Exception:
+            return ""
+    return {"commit": run("git", "rev-parse", "--short", "HEAD") or "unknown",
+            "dirty": bool(run("git", "status", "--porcelain")),
+            "built": date.today().isoformat()}
 
 
 def build_page_index():
@@ -130,7 +149,8 @@ def main(out):
 
     pidx, npages = build_page_index()
 
-    data = {"built": date.today().isoformat(), "docs": docs, "segs": segs, "media": media,
+    build = git_build()
+    data = {"built": build["built"], "build": build, "docs": docs, "segs": segs, "media": media,
             "ents": ents, "etotal": n_ment, "ocr": ocr, "pidx": pidx, "npages": npages}
 
     tpl = open(os.path.join(ROOT, "site", "investigator.html")).read()

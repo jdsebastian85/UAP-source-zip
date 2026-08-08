@@ -238,8 +238,42 @@ index into `spine/pages.jsonl` and the app fetches one page per Range request, v
 that the returned record is the release and page it asked for. If the host ignores Range
 it downloads once, says so, and slices locally.
 
+### Mark keys name the thing, never its position
+
+A mark key identifies what it marks:
+
+```
+doc:<release_id>          med:<release_id>
+page:<release_id>:<n>     ent:<ENTITY_TYPE>:<value_normalized>
+```
+
+The first version keyed entities as `ent:<array index>`. Entity order is by mention count,
+so T2 alone would have reshuffled it and every entity star would have silently re-pointed at
+a different entity while still displaying its old label. Silent wrong is worse than broken.
+
+A key that no longer resolves is displayed as unresolved and is never rebound to whatever
+now occupies that slot. Export format:
+
+```json
+{"schema":"pursue.marks/2","exported_utc":"…",
+ "corpus_build":{"commit":"92de5a3","dirty":false,"built":"2026-08-08"},
+ "marks":{…}}
+```
+
+`corpus_build.commit` is HEAD at build time, so a tool built before its own commit lands
+points at the parent; `dirty` flags an uncommitted tree. Import reads both the current
+schema and the old bare-map format, rekeys positional entity marks through the current
+ordering, and says out loud that it assumed the file came from this build — a v1 file has
+no stamp, so that assumption cannot be checked. Import also compares `corpus_build.commit`
+against the running build and warns when they differ. Existing marks in localStorage
+migrate on first load; the v1 copy is left in place rather than deleted.
+
 Still open on it:
 - Notes are localStorage, so per-device. Export from the Marks tab is the only backup.
+- `value_normalized` is a derived convenience, so changing `aliases.yml` or the
+  normalization rules will change entity keys. That surfaces as an unresolved mark, which
+  is the correct failure — visible, not silent — but it is a real migration cost to weigh
+  before rewriting normalization rules.
 - Documents have no open-in-one-tap because they are still inside the zips (T1c). When
   `doc_links.csv` exists, wire it into the document card the same way media is wired.
 - No full-text search across pages. Entity search covers most of it; a real one wants
