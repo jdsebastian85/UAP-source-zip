@@ -2914,3 +2914,16 @@ USG-UAP-D001-Congress-WhiteHouse-UFO-Correspondence-1998.pdf,73,ENCLOSURE_REFERE
 USG-UAP-D001-Congress-WhiteHouse-UFO-Correspondence-1998.pdf,77,ENCLOSURE_REFERENCED,enclosure/attachment cited; verify presence in dump
 USG-UAP-D001-Congress-WhiteHouse-UFO-Correspondence-1998.pdf,78,ENCLOSURE_REFERENCED,enclosure/attachment cited; verify presence in dump
 USG-UAP-D001-Congress-WhiteHouse-UFO-Correspondence-1998.pdf,86,ENCLOSURE_REFERENCED,enclosure/attachment cited; verify presence in dump
+DOW-UAP-D092,5,DOCID_STAMP_TRUNCATED,"doc_id_stamp '34714' is a proper prefix of '34714841' on other pages of this release; source pages.jsonl, not evaluated by the T3 entities.csv check"
+DOW-UAP-D092,10,DOCID_STAMP_TRUNCATED,"doc_id_stamp '347148' is a proper prefix of '34714841' on other pages of this release; source pages.jsonl, not evaluated by the T3 entities.csv check"
+DOW-UAP-D092,15,DOCID_STAMP_ANOMALOUS,doc_id_stamp '341' shorter than longest stamp '34714841' of this release but not a prefix of any; source pages.jsonl
+DOW-UAP-D092,16,DOCID_STAMP_TRUNCATED,"doc_id_stamp '347' is a proper prefix of '34714841' on other pages of this release; source pages.jsonl, not evaluated by the T3 entities.csv check"
+DOW-UAP-D092,26,DOCID_STAMP_TRUNCATED,"doc_id_stamp '3471' is a proper prefix of '34714841' on other pages of this release; source pages.jsonl, not evaluated by the T3 entities.csv check"
+DOW-UAP-D092,33,DOCID_STAMP_TRUNCATED,"doc_id_stamp '347' is a proper prefix of '34714841' on other pages of this release; source pages.jsonl, not evaluated by the T3 entities.csv check"
+DOW-UAP-D092,34,DOCID_STAMP_TRUNCATED,"doc_id_stamp '34714' is a proper prefix of '34714841' on other pages of this release; source pages.jsonl, not evaluated by the T3 entities.csv check"
+DOW-UAP-D092,43,DOCID_STAMP_TRUNCATED,"doc_id_stamp '347' is a proper prefix of '34714841' on other pages of this release; source pages.jsonl, not evaluated by the T3 entities.csv check"
+DOW-UAP-D092,73,DOCID_STAMP_TRUNCATED,"doc_id_stamp '347148' is a proper prefix of '34714841' on other pages of this release; source pages.jsonl, not evaluated by the T3 entities.csv check"
+DOW-UAP-D092,83,DOCID_STAMP_TRUNCATED,"doc_id_stamp '3471' is a proper prefix of '34714841' on other pages of this release; source pages.jsonl, not evaluated by the T3 entities.csv check"
+FBI-UAP-D013-WA-UFO-Investigation-1952-1960.pdf,11,DOCID_STAMP_TRUNCATED,"doc_id_stamp '34714' is a proper prefix of '34714596' on other pages of this release; source pages.jsonl, not evaluated by the T3 entities.csv check"
+FBI-UAP-D013-WA-UFO-Investigation-1952-1960.pdf,34,DOCID_STAMP_TRUNCATED,"doc_id_stamp '34714' is a proper prefix of '34714596' on other pages of this release; source pages.jsonl, not evaluated by the T3 entities.csv check"
+FBI-UAP-D013-WA-UFO-Investigation-1952-1960.pdf,48,DOCID_STAMP_TRUNCATED,"doc_id_stamp '34714' is a proper prefix of '34714596' on other pages of this release; source pages.jsonl, not evaluated by the T3 entities.csv check"
