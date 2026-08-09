@@ -2,7 +2,7 @@
 
 Structured analysis of a Department of War / PURSUE initiative UAP declassified
 document and media release. 211 documents, 8,661 pages, 112 videos, 8.38 hours,
-spanning 1946 to 2026.
+spanning 1944 to 2026.
 
 The spine records what the documents say and where they say it. It does not evaluate,
 rank, or conclude. Read `CLAUDE.md` before working on this — the evidence rules are

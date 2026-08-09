@@ -81,7 +81,7 @@ footer{border-top:1px solid var(--line);padding:18px 0 40px;font-family:'IBM Ple
   <div class="eyebrow">Department of War &middot; PURSUE Initiative &middot; Public Release Corpus</div>
   <h1>Pursue <span class="thin">Corpus Reader</span></h1>
   <div class="stampbox">Declassified in full</div>
-  <div class="meta"><b id="ndocs"></b> documents &middot; <b id="npg"></b> pages &middot; <b id="nmed"></b> videos &middot; span <b>1946&ndash;2026</b> &middot; every value verbatim, cited to release + page</div>
+  <div class="meta"><b id="ndocs"></b> documents &middot; <b id="npg"></b> pages &middot; <b id="nmed"></b> videos &middot; span <b id="yspan"></b> &middot; every value verbatim, cited to release + page</div>
   <div class="strip" id="strip" title="Share of pages by source agency"></div>
   <div class="striplab" id="striplab"></div>
 </header>
@@ -148,7 +148,7 @@ const D=JSON.parse(document.getElementById('data').textContent);
 const legacy=new Set(['65','38','18','255','341','342','331','59','Serial','2024','059UAP00011.pdf','059UAP00012.pdf','059UAP00013.pdf']);
 const fam=a=>['DOW','DoW'].includes(a)?'DOW':a==='FBI'?'FBI':a==='CIA'?'CIA':a==='NASA'?'NASA':legacy.has(a)?'LEGACY':'OTHER';
 const totalPg=D.docs.reduce((s,d)=>s+d.p,0);
-ndocs.textContent=D.docs.length; npg.textContent=totalPg.toLocaleString(); nmed.textContent=D.media.length;
+ndocs.textContent=D.docs.length; npg.textContent=totalPg.toLocaleString(); nmed.textContent=D.media.length; yspan.textContent=D.span;
 /* agency strip */
 const shares={},cols={DOW:'#f2a944',FBI:'#c8482f',CIA:'#87908c',NASA:'#5d7d8a',LEGACY:'#6e5b45',OTHER:'#3a4145'};
 D.docs.forEach(d=>{const f=fam(d.a);shares[f]=(shares[f]||0)+d.p});

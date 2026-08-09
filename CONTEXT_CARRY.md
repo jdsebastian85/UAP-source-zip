@@ -81,9 +81,12 @@ tool and leads with them. Both read the same spine; neither writes to it.
   the page exists in this repo — `scripts/` holds `assess_docid_stamps`, `build_investigator`,
   `build_media_links`, `build_site`, `fetch_sources`, `normalize_entities`, `search_entities`,
   `track_object`, `verify_spine`. Treat the reading room as not started.
-- It gives the span as **1944–2026**; `CLAUDE.md` gives **1946–2026**. Both are recorded
-  here and neither is picked. Resolve it against `manifest.csv` before either number is
-  published.
+- ~~Span disagreement~~ **resolved 2026-08-09 against `manifest.csv`: 1944–2026 is correct**
+  and `CLAUDE.md`/`README.md` have been corrected. The 1944 is a single real document,
+  `331-120752-Numeric-Files-1944–1945-...-German-Armament-Equipment-Documents.pdf`; 1946
+  was the second-earliest. Two caveats now recorded in `CLAUDE.md`: only 117 of 211
+  documents carry a year token at all, and the earliest date *mentioned in the text* is
+  1848, which is a different measurement and must not be quoted as the span.
 
 ## Environment facts
 

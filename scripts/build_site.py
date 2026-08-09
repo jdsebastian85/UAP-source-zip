@@ -68,8 +68,15 @@ def main(out):
               "conf": c.get("confidence", "unreviewed")}
              for c in load_aliases(os.path.join(SPINE, "aliases.yml"))]
 
+    # Span is derived, never asserted. It was hardcoded as 1946-2026 in the
+    # template and was wrong: the earliest document carries 1944. Only 117 of
+    # 211 documents carry a year token at all, so this is the range of the
+    # documents that state one, not a claim about the rest.
+    yrs = sorted(int(d["y"]) for d in docs if d["y"])
+    span = f"{yrs[0]}\u2013{yrs[-1]}" if yrs else "unknown"
+
     data = {"docs": docs, "media": media, "ents": ents, "alias": alias,
-            "etotal": n_ment, "eflag": n_flag}
+            "etotal": n_ment, "eflag": n_flag, "span": span}
     tpl = open(os.path.join(os.path.dirname(__file__), "..", "site", "template.html")).read()
     html = tpl.replace("__DATA__", json.dumps(data, separators=(",",":")))
     if os.path.dirname(out):
@@ -78,7 +85,7 @@ def main(out):
     print(f"wrote {out}: {len(docs)} documents, {len(media)} media rows, "
           f"{round(sum(m['d'] for m in media)/3600,2)} hours, "
           f"{n_ment} entity mentions in {len(ents)} groups ({n_flag} flagged), "
-          f"{len(alias)} alias clusters")
+          f"{len(alias)} alias clusters, span {span} from {len(yrs)} dated documents")
 
 if __name__ == "__main__":
     ap = argparse.ArgumentParser(); ap.add_argument("--out", default="index.html")

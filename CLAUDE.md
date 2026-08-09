@@ -53,7 +53,10 @@ relative to frame, sensor overlay elements, redaction blocks. Do not name a caus
 
 ## Corpus state at handoff (2026-08-07)
 
-- **211 documents / 8,661 pages**, 11 agency prefixes, span 1946–2026
+- **211 documents / 8,661 pages**, 11 agency prefixes, span 1944–2026
+  (document coverage: earliest and latest year token in `release_id` + `subject_meta`,
+  derived from the 117 of 211 documents that carry one. Not the same as the earliest date
+  *mentioned* in the text, which is 1848 — see below.)
 - **112 videos / 8.38 hours**
 - 580 segments, 11,090 entity mentions
 - Gaps logged: 1,719 NO_TEXT_LAYER, 818 LOW_OCR_QUALITY, 251 ENCLOSURE_REFERENCED,
