@@ -185,13 +185,34 @@ def process(pdf_path):
     return manifest, page_rows, seg_rows, ent_rows, gap_rows
 
 
-def append_csv(path, header, rows):
-    new = not os.path.exists(path)
+def append_csv(path, header, rows, carry=None):
+    """Append rows aligned to the file's existing header, not the caller's.
+
+    Some columns are written by other scripts and are not produced here: the
+    T2.6 link columns source_url / mirror_url / working_url come from
+    scripts/build_media_links.py. Writing the caller's header order into a file
+    that already has those columns appends short, misaligned rows — the kind of
+    corruption that reads fine until someone follows a dead link.
+
+    `carry` holds values for those columns, taken from the rows this re-ingest
+    is replacing, so a re-run preserves them instead of blanking them.
+    """
+    existing = None
+    if os.path.exists(path):
+        with open(path) as f:
+            first = f.readline()
+        if first.strip():
+            existing = next(csv.reader([first]))
+    out_header = existing or list(header)
     with open(path, "a", newline="") as f:
         w = csv.writer(f)
-        if new:
-            w.writerow(header)
-        w.writerows(rows)
+        if existing is None:
+            w.writerow(out_header)
+        for r in rows:
+            rec = dict(zip(header, r))
+            for c, v in (carry or {}).items():
+                rec.setdefault(c, v)
+            w.writerow([rec.get(c, "") for c in out_header])
 
 
 def main(paths):
@@ -199,13 +220,22 @@ def main(paths):
         man, pages, segs, ents, gaps = process(p)
         rid = man["release_id"]
 
-        # drop prior rows for this release (idempotent re-run)
+        # drop prior rows for this release (idempotent re-run), keeping any
+        # columns this script does not produce so they survive the round trip
+        carry = {}
         for fn in ("manifest.csv", "segments.csv", "entities.csv", "gaps.csv"):
             fp = os.path.join(OUT, fn)
             if os.path.exists(fp):
                 with open(fp) as f:
                     rows = list(csv.reader(f))
-                head, body = rows[0], [r for r in rows[1:] if r and r[0] != rid]
+                head, body, dropped = rows[0], [], []
+                for r in rows[1:]:
+                    if not r:
+                        continue
+                    (dropped if r[0] == rid else body).append(r)
+                if fn == "manifest.csv" and dropped:
+                    prior = dict(zip(head, dropped[0]))
+                    carry = {c: prior.get(c, "") for c in head if c not in man}
                 with open(fp, "w", newline="") as f:
                     csv.writer(f).writerows([head] + body)
         jl = os.path.join(OUT, "pages.jsonl")
@@ -213,7 +243,8 @@ def main(paths):
             keep = [l for l in open(jl) if json.loads(l)["release_id"] != rid]
             open(jl, "w").writelines(keep)
 
-        append_csv(os.path.join(OUT, "manifest.csv"), list(man), [list(man.values())])
+        append_csv(os.path.join(OUT, "manifest.csv"), list(man), [list(man.values())],
+                   carry=carry)
         append_csv(os.path.join(OUT, "segments.csv"),
                    ["release_id", "segment_no", "start_page", "end_page",
                     "subject_line", "routing", "first_date_verbatim", "doc_id_stamp"],
