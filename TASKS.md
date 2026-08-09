@@ -361,6 +361,81 @@ the browser and never leave the device, and the Drive folder is already shared
 
 ---
 
+## T10. Layer 5 co-presence in the front end — DESIGN RECORDED, NOT BUILT
+
+Recorded 2026-08-09 from the owner's description. **The spec document and the HTML fixture
+were referenced but never arrived**, so this is the design as described in chat, not the
+nine acceptance criteria or the payload contract. Get those before building.
+
+### Why it belongs in the front end
+
+`CLAUDE.md` says Layer 5 is derived at query time and never written to disk. That rules it
+out as a pipeline task by construction: anything the pipeline produced would be a stored
+edge. So it has to be computed in the reader, per query, and thrown away. The design as
+described complies — nothing new is persisted.
+
+### The coverage comb
+
+Every result sits on a strip where one tick is one page in scope. Scope is **every page of
+every document the subject appears in**, unread pages included, because that is the set
+where a co-mention could have existed.
+
+Three states, and amber means exactly one thing — *you could not read this page*. No other
+element on the page may use that colour.
+
+| Tick | Meaning | Count today |
+|---|---|---|
+| solid | shipped text layer | 6,124 |
+| hollow | below the OCR floor | 818 |
+| amber | no text layer | 1,719 |
+
+**The data already exists and is cheap.** Derivable per page from `pages.jsonl`
+(`no_text_layer`) plus the `LOW_OCR_QUALITY` rows in `gaps.csv`. Encoded as one run-string
+per release it costs **17.8 KB** across all 211 releases — small enough to embed in the
+payload rather than fetch. It is not in the payload today; only per-document gap totals are.
+That is the one build change the feature needs.
+
+### Three outcomes on a pair test, never two
+
+1. **Co-present** — with cites.
+2. **Not observed** — with the blind-spot count attached.
+3. **String missing from the index** — the term never appears at all.
+
+Today a zero result and a true absence render identically. These are different claims and
+must read differently. Same T9 semantics as marks migration: zero matches and one match are
+different messages.
+
+### Vocabulary rule
+
+No copy in the panel may say *related*, *linked*, or *network*. The claim is co-presence on
+a cited page, which is the only thing verbatim data supports.
+
+### The tension, and a way to settle it
+
+The purist objection is fair: showing co-occurrence at all invites the reader to infer
+connection, which is what this corpus exists to avoid. The counter is that the inference
+happens anyway, unmeasured, and rendering it with a denominator is more honest than leaving
+it to the reader's head.
+
+Both are true, so make it structural rather than a matter of taste: **a zero result must be
+unable to render without its denominator.** The failure mode is not the feature, it is the
+comb being dropped for space on a narrow screen — that is the moment it silently becomes
+the thing the purist feared. So the comb is non-optional, it is not responsive-hidden, and
+there is an acceptance test that a "not observed" panel with no comb cannot be produced.
+
+### Open question — the owner's call
+
+**Do media segments enter the index, or stay out until segment confidence is scored?**
+
+Recommendation, not a decision: keep them out for now. Media can carry a cite (timestamp,
+per rule 3) but there is no segment confidence score yet, so media rows would enter with no
+denominator while document pages have one. A result mixing the two would have a coverage
+strip that is only partly meaningful, which is worse than a narrower scope. Show a separate
+count of media segments not searched, so their absence is visible rather than silent — the
+same principle as the comb itself.
+
+---
+
 ## Commercial notes (standing instruction: surface these unprompted)
 
 - The site stays free. The material is public domain and the project's credibility
@@ -374,6 +449,13 @@ the browser and never leave the device, and the Drive folder is already shared
   211-document, 8-hour-media pipeline is stronger evidence than any bullet on a resume.
 - Internet Archive hosting keeps marginal cost near zero, which is what makes the free
   public version sustainable indefinitely rather than until a bandwidth bill arrives.
+- **The coverage comb is separable IP and worth documenting away from PURSUE.** Every
+  research tool over scanned government records has the same silent failure: search 8,661
+  pages where 2,537 are not machine-readable, report no hits, and the reader cannot tell a
+  real absence from an unread page. A convention that puts the unreadable fraction on every
+  result is small to build and, as far as we know, absent from FOIA readers, court
+  e-discovery viewers and archive front ends. Write it up as a standalone UI pattern with
+  the PURSUE corpus as the worked example, not as a PURSUE feature.
 - Drive is not a hosting plan and should not be treated as one. Public link-sharing on a
   consumer account carries an undocumented daily download cap; a file that gets attention
   starts returning a quota page instead of the video, and the failure looks like the
