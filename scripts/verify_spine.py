@@ -81,6 +81,26 @@ if lnk:
         if not r["drive_file_id"].strip() or not r["working_view_url"].strip():
             errs.append(f"media_links: {r['release_id']} has an empty working link"); break
 
+# T2.6 link columns on the canonical files must agree with media_links.csv.
+# ingest.py rewrites a release's rows from the source file and does not know
+# about these columns, so an ingest pass drops them. Missing is a warning with
+# the fix attached; present-but-disagreeing is an error, because a stale link
+# is the kind of wrong that still looks right.
+if lnk:
+    want = {r["release_id"]: r["working_view_url"] for r in lnk}
+    for name, rows in (("media.csv", med), ("manifest.csv", man)):
+        if not rows:
+            continue
+        if "working_url" not in rows[0]:
+            warns.append(f"{name}: no source_url/mirror_url/working_url columns — "
+                         f"run scripts/build_media_links.py (an ingest pass drops them)")
+            continue
+        drift = [r["release_id"] for r in rows
+                 if r["release_id"] in want and r["working_url"] != want[r["release_id"]]]
+        if drift:
+            errs.append(f"{name}: {len(drift)} working_url disagree with media_links.csv "
+                        f"{drift[:3]} — re-run scripts/build_media_links.py")
+
 # Layer 5 must never be persisted
 for forbidden in ("relations.csv","edges.csv","cooccurrence.csv","layer5.csv"):
     if os.path.exists(os.path.join(SP, forbidden)):

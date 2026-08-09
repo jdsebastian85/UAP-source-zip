@@ -49,8 +49,9 @@ and `unzip -l` them.
 **Acceptance:** a written diff per zip: N files, M already in media.csv, K new.
 
 **Done on the video side (2026-08-08):** the Drive folder was listed in full and diffed
-against `media.csv`. 133 videos in Drive, all 112 `media.csv` rows resolve to a live Drive
-file, 21 videos are in Drive with no spine row. See T1b.
+against `media.csv`. The folder holds 135 items: 131 `.mp4` and 4 zips. Two further corpus
+videos sit in the Drive account root rather than in the folder, so the corpus has 133
+videos in Drive in total. All 112 `media.csv` rows resolve to a live Drive file. See T1b.
 
 ---
 
@@ -59,15 +60,18 @@ file, 21 videos are in Drive with no spine row. See T1b.
 Listed in `media_links.csv` as `spine_status = NOT_INGESTED`. They are not a new release
 family — every one belongs to a family already in the corpus:
 
-| Family | Count |
-|---|---|
-| `DOD_111688*` / `DOD_111689*` (ISR) | 12 |
-| `video_2605_DOD_*` (edited presentation products) | 7 |
-| `DOD_111764796-1920x1080-9000k` | 1 |
-| `DOD_111887384` | 1 |
+| Family | In the release folder | In the Drive root |
+|---|---|---|
+| `DOD_111688*` / `DOD_111689*` (ISR) | 12 | — |
+| `video_2605_DOD_*` (edited presentation products) | 7 | — |
+| `DOD_111764796-1920x1080-9000k` | — | 1 |
+| `DOD_111887384` | — | 1 |
+| **Total** | **19** | **2** |
 
-Two of them (`DOD_111764796-1920x1080-9000k`, `DOD_111887384`) sit in the Drive root rather
-than in the release folder. That is a filing fact about Drive, not a fact about the release.
+Nineteen inside the folder, twenty-one counting the two that sit in the Drive account root
+rather than in the folder. Both numbers are right about different sets; the ingest pass
+should take all 21. The in-folder split is 12 ISR and 7 `video_2605_*`, verified against
+`media_links.csv`.
 
 Needs the files on disk: `ffprobe` for the Layer 0 row, frame extraction for the triage
 strip. Run the existing media ingest path, then re-run `scripts/build_media_links.py` so
@@ -92,24 +96,94 @@ same way as `media_links.csv`, joined on `manifest.csv` release_id.
 
 ---
 
-## T2. Bulk OCR pass — biggest outstanding job
+## T2 (revised). Readable transcripts, and the page image beside them
 
-2,537 pages need it: 1,719 with no text layer, 818 with low quality.
+2,537 pages need OCR: 1,719 with no text layer, 818 with low quality.
 
-Rules:
-- Write to `ocr_recovered.csv`, never into `pages.jsonl` text fields. The two sources
-  stay separable forever.
-- Tag every recovered page `OCR_RECOVERED`.
-- Set a quality floor. Pages below it are logged as still-failed and are **not** fed to
-  entity extraction. Polluting Layer 3 with OCR garbage is worse than having no text.
-- Worst offenders, expect failure and log it rather than forcing output:
-  FBI-UAP-D027/D038/D039/D041/D042 (quality 0.0), FBI-Photo-B series (image-only),
-  DOW-UAP-D60/D63/D65 Mission Reports (0.0).
+Order, from the spec: **T2.4 first** (display only, no rerun), then T2.2 + T2.1 + T2.3 as
+one OCR pass, then T2.5 and T2.6 once hosting is decided. Run `verify_spine.py` after each.
+`pages.jsonl` stays byte-identical throughout: recovered text lives in `ocr_recovered.csv`
+and is never written into the shipped-text layer.
 
-Run it overnight. It is multi-hour and it is why we moved to Code.
+**The published confidence floor is 60** (tesseract word confidence, 0–100). It is stated
+in the header of `scripts/build_investigator.py` and shown in the tool. The OCR pass must
+use the same number for its entity cutoff.
 
-**Acceptance:** `ocr_recovered.csv` populated; a summary table of pages recovered,
-pages still failed, and mean quality by release; `pages.jsonl` byte-identical to before.
+### T2.4 — Render honestly in the tool — DONE 2026-08-09
+
+Shipped ahead of the OCR rerun, as the spec ordered. In the page view:
+- `[REDACTED]` renders as a drawn block, not as the literal word sitting in the sentence.
+- Words below the floor render dimmed with the score on tap, so a bad transcript is
+  legible as a bad transcript.
+- Every page states its source: shipped text layer, locally recovered, or neither, with
+  the mean confidence for that page.
+- A page with no text from either source says exactly that, instead of showing an empty
+  panel that reads as nothing being there.
+
+The renderer already speaks the T2.3 word schema. `build_investigator.py` reads
+`ocr_recovered.csv` in either shape and byte-indexes it per page, so the OCR pass only has
+to write the file — no display work is left. Until it runs, the existing 61 recovered pages
+are page-per-row with no scores, and the panel says so rather than implying confidence
+that was never measured.
+
+### T2.1 — Redaction-aware OCR — NOT STARTED
+
+Detect filled rectangles, mask them white, OCR the cleaned image, reinsert `[REDACTED]` at
+the block's reading-order position. Write `redactions.csv`:
+`release_id, pdf_page, bbox, area_px, method`.
+
+Do not attempt to recover redacted content by any means. The block is the fact.
+
+The tool already reads `redactions.csv` and counts blocks per page separately from the
+`REDACTION_MARKER` gap rows. A drawn block and a typed marker are different observations
+and are displayed as different pills.
+
+### T2.2 — Preprocessing before OCR — NOT STARTED
+
+Upscale to ~300 dpi, deskew, adaptive threshold, despeckle, try `--psm 6` and `--psm 4`
+and keep the higher-scoring result.
+
+### T2.3 — Per-word confidence — NOT STARTED
+
+Tesseract TSV output, not plain text. New `ocr_recovered.csv` columns:
+`release_id, pdf_page, word_no, word_verbatim, conf, bbox, source_tag`.
+
+Sub-floor words are kept with their score, never deleted. **Entity extraction runs only on
+words at or above the floor** — feeding low-confidence OCR into Layer 3 manufactures names
+that were never on the page.
+
+Rows for a page must be contiguous and sorted by `release_id, pdf_page`. The index builder
+refuses to index a page whose rows are split, rather than indexing a fragment and calling
+it the page.
+
+Worst offenders — expect failure and log it rather than forcing output:
+FBI-UAP-D027/D038/D039/D041/D042 (quality 0.0), FBI-Photo-B series (image-only),
+DOW-UAP-D60/D63/D65 Mission Reports (0.0).
+
+**Blocked here:** this container has no tesseract, no poppler, no opencv, and `apt-get`
+cannot reach the archives. The pass needs a machine with the toolchain and the source PDFs,
+which are still inside the Drive zips.
+
+**Acceptance:** `ocr_recovered.csv` in word schema; a summary of pages recovered, pages
+still failed, and mean confidence by release; `pages.jsonl` byte-identical to before.
+
+### T2.5 — Page image beside the text — NOT STARTED
+
+`pdftoppm -jpeg -r 150`, run during the OCR pass while the sources are open. Roughly
+8,661 pages at 100–200 KB is over a gigabyte, which does not belong in this repo. Preference
+order: Internet Archive item, then a separate assets repo served from Pages, then
+on-demand local render for the tool only. Do not inline page images into the payload.
+
+### T2.6 — Link every document to its sources — DONE for media 2026-08-09
+
+`manifest.csv` and `media.csv` now carry `source_url`, `mirror_url`, `working_url`.
+All 112 ingested media rows have a working link. All 211 documents have all three empty,
+because the PDFs are still inside the zips and there is nothing to link to.
+
+These columns are written by `scripts/build_media_links.py`, not by `ingest.py`. **An
+ingest pass rewrites a release's rows and will drop them**, so re-run that script after
+every ingest. `verify_spine.py` warns when the columns are missing and errors when they
+disagree with `media_links.csv`.
 
 ---
 

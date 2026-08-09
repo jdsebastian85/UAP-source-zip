@@ -91,6 +91,22 @@ button.act:active{opacity:.7}
   padding:12px; max-height:62vh; overflow:auto;
 }
 mark{background:var(--mark); color:inherit; border-radius:2px; padding:0 1px}
+/* A word tesseract was not confident about must never look like one it was. */
+.unclear{
+  opacity:.45; border-bottom:1px dotted currentColor; cursor:help;
+}
+.unclear::after{content:""}
+/* A redaction is a drawn block on the page. Render it as a block, not as the
+   literal word "[REDACTED]" sitting in the sentence like something typed. */
+.redblk{
+  display:inline-block; vertical-align:baseline; background:currentColor;
+  opacity:.82; border-radius:2px; width:5.5em; height:1em; margin:0 .15em;
+  position:relative; top:.15em; cursor:help;
+}
+.conflegend{display:flex; gap:12px; flex-wrap:wrap; font-size:11px; color:var(--dim); margin:6px 0 0}
+.conflegend span{display:flex; align-items:center; gap:5px}
+.legend-dim{opacity:.45; border-bottom:1px dotted currentColor}
+.swatch{width:22px; height:9px; border-radius:2px; background:currentColor; display:inline-block}
 .src{
   font-size:10.5px; letter-spacing:.5px; text-transform:uppercase; color:var(--dim);
   font-weight:700; margin:14px 0 5px;
@@ -356,28 +372,40 @@ async function pageView(id, pg){
   const k = kPage(id, pg), label = id+" p."+pg;
   const pages = (D.pidx[id]||[]).map(r => r[0]);
   const i = pages.indexOf(pg);
-  const ocr = (D.ocr[id]||{})[pg];
   $("view").innerHTML = `<button class="back" data-go="doc:${esc(id)}">← ${esc(id)}</button>
     <div class="card"><div class="head"><div class="t">${esc(id)} · page ${pg}</div>${starBtn(k,label)}</div>
     <div class="m">Loading page text…</div></div>`;
-  const rec = await getPage(id, pg);
+  const [rec, ocr] = await Promise.all([getPage(id, pg), getRecovered(id, pg)]);
   const hl = SEL && SEL.hl ? SEL.hl : "";
   const slow = noRange ? `<div class="warnbox">This host does not serve byte ranges, so the whole
     27 MB text file was downloaded once. Pages are instant from here on, but a reload pays it again.</div>` : "";
+  const hasShipped = !rec.err && (rec.text || "").trim();
+  const hasRecovered = ocr && !ocr.err;
   const body = rec.err
     ? `<div class="warnbox">${esc(rec.err)}</div>`
-    : (rec.text || "").trim()
-      ? `<div class="src">Text layer — TEXT_LAYER (publisher's OCR, shipped in the PDF)</div>
+    : hasShipped
+      ? `<div class="src">Shipped text layer — TEXT_LAYER (the publisher's OCR, inside the PDF)</div>
          <div class="pagetext">${highlight(rec.text, hl)}</div>`
-      : `<div class="src">Text layer — TEXT_LAYER</div>
-         <div class="card"><div class="m">This page carries no text layer. Logged as a gap, which
-         records only that the layer is absent — not that the page is blank.</div></div>`;
+      : `<div class="src">Shipped text layer — TEXT_LAYER</div>
+         <div class="card"><div class="m">This page carries no shipped text layer. That is logged as a
+         gap and records only that the layer is absent — not that the page is blank.</div></div>`;
+  /* Never leave an empty panel that reads as "nothing here". */
+  const nothing = (!rec.err && !hasShipped && !hasRecovered)
+    ? `<div class="warnbox">No text for this page from either source: the PDF shipped no text layer,
+       and no local OCR pass has recovered it yet. The page image has not been read — this is a
+       gap in the transcript, not a blank page in the release.</div>` : "";
+  const nred = ((D.red||{})[id]||{})[pg] || 0;
   const meta = rec.err ? "" : `<div class="m" style="margin-top:9px">
       <span class="pill">${rec.char_count} chars</span>
       <span class="pill">OCR ${rec.ocr_quality}</span>
+      <span class="pill${hasShipped?"":" warn"}">${hasShipped?"shipped text":"no shipped text"}</span>
+      <span class="pill${hasRecovered?"":""}">${hasRecovered
+        ? "recovered" + (ocr.mean!=null?" · mean conf "+ocr.mean:"")
+        : "not recovered"}</span>
       ${rec.no_text_layer?`<span class="pill warn">NO_TEXT_LAYER</span>`:""}
       ${(rec.markings||[]).map(m=>`<span class="pill">${esc(m)}</span>`).join("")}
-      ${(rec.redaction_markers||[]).length?`<span class="pill warn">${rec.redaction_markers.length} redaction marker(s)</span>`:""}
+      ${(rec.redaction_markers||[]).length?`<span class="pill warn">${rec.redaction_markers.length} redaction marker(s) in text</span>`:""}
+      ${nred?`<span class="pill warn">${nred} redaction block(s) detected</span>`:""}
       ${rec.doc_id_stamp?`<span class="pill">${esc(rec.doc_id_stamp)}</span>`:""}
     </div>`;
   $("view").innerHTML = `<button class="back" data-go="doc:${esc(id)}">← ${esc(id)}</button>
@@ -392,10 +420,105 @@ async function pageView(id, pg){
       ${i>=0&&i<pages.length-1?`<button class="act" data-go="page:${esc(id)}:${pages[i+1]}">p.${pages[i+1]} →</button>`:""}
     </div>
     ${slow}
+    ${nothing}
     ${body}
     ${ocr ? `<div class="src">Recovered locally — OCR_RECOVERED (never merged with the text layer)</div>
-      <div class="pagetext">${highlight(ocr, hl)}</div>` : ""}`;
+      ${renderRecovered(ocr, hl)}` : ""}`;
   wire();
+}
+
+/* ---------- recovered text: fetched per page, rendered honestly ---------- *
+ * Word rows live in spine/ocr_recovered.csv and are pulled by byte range, the
+ * same way page text is. Nothing about confidence is invented here: if the
+ * file is still page-per-row there are no scores, and the panel says so
+ * instead of rendering everything as though it were certain.                */
+const ocache = {};
+let ofullBuf = null;
+
+/* A record is not a line: ocr_text holds multi-line page text, so newlines
+   inside quotes belong to the field. Splitting on "\n" would tear records. */
+function parseCsv(text){
+  const rows = []; let row = [], cur = "", q = false;
+  for (let i = 0; i < text.length; i++){
+    const c = text[i];
+    if (q){
+      if (c === '"'){ if (text[i+1] === '"'){ cur += '"'; i++; } else q = false; }
+      else cur += c;
+    } else if (c === '"') q = true;
+    else if (c === ","){ row.push(cur); cur = ""; }
+    else if (c === "\n"){ row.push(cur); rows.push(row); row = []; cur = ""; }
+    else if (c !== "\r") cur += c;
+  }
+  if (cur !== "" || row.length){ row.push(cur); rows.push(row); }
+  return rows;
+}
+
+async function getRecovered(rid, pg){
+  if (D.ocr_fmt === "none") return null;
+  const key = rid + ":" + pg;
+  if (ocache[key] !== undefined) return ocache[key];
+  const row = (D.oidx[rid] || []).find(r => r[0] === pg);
+  if (!row) return (ocache[key] = null);
+  const [, off, len, mean, low] = row;
+
+  let bytes;
+  if (ofullBuf) bytes = new Uint8Array(ofullBuf, off, len);
+  else {
+    let res;
+    try { res = await fetch("spine/ocr_recovered.csv",
+      {headers:{Range:"bytes=" + off + "-" + (off + len - 1)}}); }
+    catch(e) { return (ocache[key] = {err:"Could not fetch recovered text: " + e.message}); }
+    if (!res.ok) return (ocache[key] = {err:"ocr_recovered.csv returned HTTP " + res.status + "."});
+    const buf = await res.arrayBuffer();
+    if (res.status === 206) bytes = new Uint8Array(buf);
+    else { ofullBuf = buf; bytes = new Uint8Array(ofullBuf, off, len); }
+  }
+
+  const cols = parseCsv(D.ocr_hdr)[0];
+  const rows = parseCsv(DEC.decode(bytes))
+    .filter(f => f.length > 1)
+    .map(f => { const o = {}; cols.forEach((c, i) => o[c] = f[i]); return o; });
+  const bad = rows.find(r => r.release_id !== rid || +r.pdf_page !== pg);
+  if (bad) return (ocache[key] = {err:
+    "The recovered-text index points at " + bad.release_id + " p." + bad.pdf_page +
+    " but " + rid + " p." + pg + " was requested. Re-run scripts/build_investigator.py."});
+  return (ocache[key] = {rows, mean, low, fmt:D.ocr_fmt});
+}
+
+function renderRecovered(rec, hl){
+  if (rec.err) return `<div class="warnbox">${esc(rec.err)}</div>`;
+  const floor = D.conf_floor;
+  if (rec.fmt === "page"){
+    const txt = (rec.rows[0] || {}).ocr_text || "";
+    return `<div class="m">Page-per-row schema: this text was recovered before per-word
+      scoring existed, so there are no confidences to show and nothing here is dimmed.
+      That is an absence of measurement, not a statement that the words are reliable.</div>
+      <div class="pagetext">${highlight(txt, hl)}</div>`;
+  }
+  let nlow = 0, nred = 0;
+  const body = rec.rows.map(r => {
+    const w = r.word_verbatim;
+    if (w === "[REDACTED]"){ nred++;
+      return `<span class="redblk" title="Redaction block detected on the page. What is under it is not in the release."></span>`; }
+    const c = parseFloat(r.conf);
+    if (isFinite(c) && c < floor){ nlow++;
+      return `<span class="unclear" title="confidence ${c} — below the floor of ${floor}, shown as unclear">${
+        highlight(w, hl)}</span>`; }
+    return highlight(w, hl);
+  }).join(" ");
+  return `<div class="m">
+      <span class="pill">mean confidence ${rec.mean == null ? "n/a" : rec.mean}</span>
+      <span class="pill">floor ${floor}</span>
+      ${nlow?`<span class="pill warn">${nlow} word(s) below floor</span>`:""}
+      ${nred?`<span class="pill warn">${nred} redaction block(s)</span>`:""}</div>
+    <div class="conflegend">
+      <span><i class="swatch"></i> at or above ${floor}</span>
+      <span class="legend-dim">dimmed = below ${floor}, tap for the score</span>
+      <span><i class="redblk" style="width:2.2em"></i> redaction block</span>
+    </div>
+    <div class="pagetext">${body}</div>
+    <div class="m">Only words at or above ${floor} are eligible for entity extraction.
+      Anything dimmed above is excluded from the entity index by design.</div>`;
 }
 
 function highlight(text, hl){
