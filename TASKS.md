@@ -363,9 +363,10 @@ the browser and never leave the device, and the Drive folder is already shared
 
 ## T10. Layer 5 co-presence in the front end — DESIGN RECORDED, NOT BUILT
 
-Recorded 2026-08-09 from the owner's description. **The spec document and the HTML fixture
-were referenced but never arrived**, so this is the design as described in chat, not the
-nine acceptance criteria or the payload contract. Get those before building.
+**Spec received 2026-08-09 and transcribed to `docs/T10_copresence.md`** — eleven acceptance
+criteria and the payload contract. That file governs; the summary below is orientation only.
+The `relations.html` fixture is a synthetic demonstration, is not in this repo, and can be
+rebuilt from the spec.
 
 ### Why it belongs in the front end
 

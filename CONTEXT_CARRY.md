@@ -68,12 +68,12 @@ tool and leads with them. Both read the same spine; neither writes to it.
    person (H. Guyford Stever); reject that candidate and record why.
 7. **Fifth release (2026-08-07)** downloaded but not reconciled against the manifest. Do
    not describe the index as complete until it is.
-8. **T10 Layer 5 co-presence** — design recorded in `TASKS.md`, not built. **The spec
-   document and HTML fixture were referenced in chat but never arrived; get them before
-   building.** The one build change it needs is a per-page readability run-string in the
-   investigator payload: derivable from `pages.jsonl` plus the `LOW_OCR_QUALITY` gap rows,
-   measured at 17.8 KB for all 211 releases. Open question for the owner: whether media
-   segments enter the index or wait for segment confidence scoring.
+8. **T10 Layer 5 co-presence** — spec in `docs/T10_copresence.md`, eleven acceptance
+   criteria, not built. Payload verified against the corpus: build gate lands exactly on
+   6,124 R / 818 L / 1,719 N = 8,661; `read` run-strings 17.1 KB, `mentions` map 213.5 KB,
+   so the payload goes from 1.48 MB to about 1.71 MB and stays one file. Media segments are
+   decided — held out, with a visible count of segments not searched. The `relations.html`
+   fixture is a demonstration only and is not in the repo.
 
 ## Two corrections to the 2026-08-08 brief
 
