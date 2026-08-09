@@ -459,6 +459,95 @@ same principle as the comb itself.
 
 ---
 
+## T12. Media pass — ASR and frame sampling (decisions recorded 2026-08-09)
+
+**The spec was written but never reached this sandbox** — same file-card gap as the T10
+spec. Get the document before building. The four decisions below are recorded from the
+owner's summary, with agreement or objection noted, so nothing is lost if the file goes
+missing again.
+
+### 1. ASR is a search index, never a correspondence key — AGREED
+
+OCR failure announces itself: `SSlflED` is visibly broken. ASR failure is fluent — it
+returns plausible words that read as correct and cannot be caught without listening. In a
+verbatim corpus every row must be checkable against its source, and an ASR row cannot be
+checked without replaying audio.
+
+Worth stating explicitly, because it is not the same rule as the OCR floor: for OCR a
+confidence threshold works because the score tracks visible brokenness. For ASR it does
+not, so the answer is not a higher floor — it is a different tier. ASR corroborates. It
+never carries a row.
+
+### 2. Expected yield written down before the run — AGREED, with one strengthening
+
+Pre-registration only works if the timestamp is verifiable. **Commit the prediction before
+the run starts**, so "we predicted that" is falsifiable rather than asserted afterwards.
+
+**Predict by `release_id`, not by percentage.** Checked against `media.csv`: the longest 11
+clips are 5.35 h of 8.38 h (64%), but the longest 5 alone are 4.81 h (57%) and the next six
+are 5–8 minute clips. A bare "60%" is satisfied by several different clip sets, and T1b
+changes the denominator anyway. Name the ids.
+
+Note also that `media.csv` has no column recording which clips are seismograph renders —
+that is an observation in `CLAUDE.md`, not a queryable fact. If the prediction depends on
+it, the classification should be recorded per clip first.
+
+### 3. Candidates live in `review/`, not `spine/` — AGREED, with an addition
+
+Keeps `verify_spine.py` hash-identical and keeps machine inference out of the tier people
+cite. The sharper framing than licence tiers: `spine/` is what gets cited, `review/` is what
+has not earned a cite yet. Same shape as `aliases.yml` — nothing promotes without the owner.
+
+**Addition:** `verify_spine.py` should assert that no spine row ever references a `review/`
+file, the same way it already refuses to let Layer 5 be persisted. Otherwise the boundary is
+a convention rather than a gate, and conventions erode.
+
+### 4. The week is bandwidth, not compute — AGREED on shape, but the number is 4x too high
+
+Measured against `media.csv`, which carries real `file_bytes` per clip (spot-checked against
+Drive's reported `fileSize` — exact match):
+
+| | |
+|---|---|
+| 112 ingested clips, measured | **7.46 GB** |
+| implied mean bitrate | **2.0 Mbit/s**, not the 9000k the filenames advertise |
+| 21 not yet ingested | size unknown |
+| extrapolated total at the same mean | **~8.9 GB** |
+
+The ~34 GB figure comes from 9 Mbit/s x 8.38 h. Only part of the set carries the `-9000k`
+label and the measured sizes do not bear it out. This is closer to a long night than a week,
+which changes the plan.
+
+**A real gap this exposes:** `drive_listing_2026-08-08.tsv` records id, title and parent but
+**not `fileSize`**, so resume-and-verify has no expected size to check against for the 21
+un-ingested clips. Capture `fileSize` on the next Drive listing — without it, a truncated
+download is indistinguishable from a complete one.
+
+Resume logic remains the thing that decides whether the run finishes: verify by size and
+hash after each file, never by existence alone.
+
+### Open question — does ASR confidence unblock T10 criterion 11?
+
+**Recommendation: no, and for a stronger reason than model certainty.**
+
+The owner's argument is right — confidence measures the model's certainty, not its accuracy,
+and under fluent failure confident-and-wrong is the normal case. But the structural reason is
+sharper: T10's comb needs a *readability* measure comparable across the whole scope. For a
+page, "no text layer" is an observable fact about the artifact. Audio has no equivalent —
+**a segment where nobody spoke and a segment the model could not hear are indistinguishable
+from confidence alone.** Media would enter with a denominator unable to separate "nothing was
+said" from "we could not hear it", which is exactly the distinction the comb exists to draw.
+
+So confidence is not merely the wrong number; the comb's semantics have no media analogue
+yet. What *would* unblock criterion 11 is a per-segment **audibility** measure — speech
+present or absent, measured from the signal rather than from the transcriber — which is a
+different thing to build and should be named as such rather than assumed to arrive with ASR.
+
+Decide this before the data exists, per the owner's own point: once confidence scores are
+sitting in a file they will argue for their own admission.
+
+---
+
 ## T11. Launch-readiness queue (owner's ordering, 2026-08-09)
 
 Ordered by cheapest-and-most-irreversible-if-skipped, not by size.
