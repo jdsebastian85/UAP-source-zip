@@ -49,6 +49,7 @@ nav button{
 }
 nav button[aria-selected=true]{color:var(--ink); border-bottom-color:var(--accent); font-weight:600}
 main{padding:var(--pad); padding-bottom:calc(48px + env(safe-area-inset-bottom)); max-width:900px; margin:0 auto}
+main.wide{max-width:1280px}
 .card{
   background:var(--panel); border:1px solid var(--line); border-radius:var(--radius);
   padding:11px 12px; margin-bottom:9px;
@@ -118,6 +119,18 @@ mark{background:var(--mark); color:inherit; border-radius:2px; padding:0 1px}
   border:1px solid var(--warn); color:var(--warn); border-radius:var(--radius);
   padding:10px 12px; font-size:13px; margin-bottom:10px;
 }
+/* T2.5: the page image beside the transcript. A transcript is a claim about a
+   page; this is what makes the claim checkable. Two columns where there is room,
+   stacked on a phone. */
+.split{display:grid; gap:12px; align-items:start}
+@media (min-width:900px){
+  .split{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
+  .split > .col-img{position:sticky; top:118px}
+}
+.pageimg{width:100%; border:1px solid var(--line); border-radius:var(--radius);
+  background:var(--panel); display:block}
+.imgwrap{position:relative}
+.imgbar{display:flex; gap:7px; align-items:center; margin-top:7px; flex-wrap:wrap}
 .pagenav{display:flex; gap:7px; align-items:center; margin:10px 0}
 .pagenav .sp{flex:1}
 ul.cites{list-style:none; margin:8px 0 0; padding:0}
@@ -421,9 +434,14 @@ async function pageView(id, pg){
     </div>
     ${slow}
     ${nothing}
-    ${body}
-    ${ocr ? `<div class="src">Recovered locally — OCR_RECOVERED (never merged with the text layer)</div>
-      ${renderRecovered(ocr, hl)}` : ""}`;
+    <div class="split">
+      <div class="col-img">${pageImagePanel(id, pg)}</div>
+      <div class="col-txt">
+        ${body}
+        ${ocr ? `<div class="src">Recovered locally — OCR_RECOVERED (never merged with the text layer)</div>
+          ${renderRecovered(ocr, hl)}` : ""}
+      </div>
+    </div>`;
   wire();
 }
 
@@ -519,6 +537,39 @@ function renderRecovered(rec, hl){
     <div class="pagetext">${body}</div>
     <div class="m">Only words at or above ${floor} are eligible for entity extraction.
       Anything dimmed above is excluded from the entity index by design.</div>`;
+}
+
+/* ---------- T2.5 page image ---------- *
+ * The URL is expanded from a configured template, never guessed. With no
+ * template the panel says no host is configured, which is the truth; it does
+ * not render a broken frame that reads as "this page has no image".        */
+function pageImageUrl(rid, pg){
+  const t = (D.pimg && D.pimg.url_template) || "";
+  if (!t) return "";
+  return t.replace(/\{release_id\}/g, encodeURIComponent(rid))
+          .replace(/\{page04\}/g, String(pg).padStart(4, "0"))
+          .replace(/\{page\}/g, String(pg));
+}
+
+function pageImagePanel(rid, pg){
+  const url = pageImageUrl(rid, pg);
+  if (!url) return `<div class="src">Page image</div>
+    <div class="card"><div class="m">No page-image host is configured, so the scan of this
+      page cannot be shown and the transcript below cannot be checked against it.
+      <b>The 211 source PDFs are still inside the Drive zips.</b> Render them with
+      <code>scripts/render_page_images.py</code>, host the output, then set
+      <code>url_template</code> in <code>site/page_images.json</code> and rebuild.</div></div>`;
+  return `<div class="src">Page image — ${esc(rid)} p.${pg}</div>
+    <div class="imgwrap">
+      <img class="pageimg" loading="lazy" src="${esc(url)}" alt="Scan of ${esc(rid)} page ${pg}"
+        onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
+      <div class="warnbox" style="display:none">No image at the configured location for this
+        page. The template resolves to a URL that returned nothing, which says the image is
+        missing from the host — not that the page is blank.</div>
+    </div>
+    <div class="imgbar">
+      <a class="act" href="${esc(url)}" target="_blank" rel="noopener">Open full size</a>
+    </div>`;
 }
 
 function highlight(text, hl){
@@ -661,6 +712,7 @@ function render(){
   $("tabs").innerHTML = TABS.map(([k, lab]) =>
     `<button data-tab="${k}" aria-selected="${T===k}">${lab}</button>`).join("");
   const v = $("view");
+  v.parentElement.classList.toggle("wide", T === "page");
   if (T === "docs")  v.innerHTML = SEL ? docView(SEL.id) : docsView();
   else if (T === "media") v.innerHTML = SEL ? medView(SEL.id) : mediaView();
   else if (T === "ents")  v.innerHTML = SEL ? entView(SEL.i) : entsView();

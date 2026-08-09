@@ -167,12 +167,34 @@ which are still inside the Drive zips.
 **Acceptance:** `ocr_recovered.csv` in word schema; a summary of pages recovered, pages
 still failed, and mean confidence by release; `pages.jsonl` byte-identical to before.
 
-### T2.5 — Page image beside the text — NOT STARTED
+### T2.5 — Page image beside the text — RENDERER AND VIEWER DONE 2026-08-09, SOURCES MISSING
 
-`pdftoppm -jpeg -r 150`, run during the OCR pass while the sources are open. Roughly
-8,661 pages at 100–200 KB is over a gigabyte, which does not belong in this repo. Preference
-order: Internet Archive item, then a separate assets repo served from Pages, then
-on-demand local render for the tool only. Do not inline page images into the payload.
+Split the same way as T2.4: everything that does not need the PDFs is built and tested.
+
+**Renderer.** `scripts/render_page_images.py`, PyMuPDF rather than `pdftoppm` — poppler is
+not installable in the sandbox (apt archives 404) while PyMuPDF ships its own binaries
+through pip, so this runs anywhere Python does. Writes `<out>/<release_id>/p0001.jpg`,
+idempotent, and a PDF that will not open is reported rather than silently skipped.
+
+**Measured, not estimated:** 150 dpi at JPEG quality 80 gives roughly **34 KB per page**, so
+all 8,661 pages is about **295 MB** — not the "over a gigabyte" the spec assumed. Still far
+too much for this repo, but it changes which hosting options are comfortable.
+
+**Viewer.** The page view is now a two-column split at 900px and above: page image on the
+left, sticky, transcript on the right; single column on a phone. The image URL is expanded
+from `url_template` in `site/page_images.json` and **never guessed**. With no template the
+panel says no host is configured and names the blocker. If the template resolves to a URL
+that returns nothing, the panel says the image is missing from the host rather than
+implying the page is blank — the same rule as everywhere else.
+
+**Do not guess the Internet Archive URL form.** Upload an item, observe the real per-page
+URL, paste it into `url_template`, and record the date in `verified_on`.
+
+Preference order unchanged: Internet Archive item, then a separate assets repo served from
+Pages, then a local directory for offline work. Page images are assets, not evidence:
+nothing is written to `spine/`, and nothing is inlined into the payload.
+
+**Blocked on:** the 211 source PDFs, still inside the Drive zips.
 
 ### T2.6 — Link every document to its sources — DONE for media 2026-08-09
 

@@ -43,6 +43,9 @@ tool and leads with them. Both read the same spine; neither writes to it.
   `media.csv`. 112 media rows have a working link; all 211 documents have three empty
   cells because the PDFs are still zipped.
 - `ingest.py` preserves columns it does not own across a re-ingest (2026-08-09)
+- T2.5 renderer and viewer: `scripts/render_page_images.py` (PyMuPDF, ~34 KB/page at 150 dpi,
+  so ~295 MB for the corpus) and a two-column page image / transcript split in the tool,
+  driven by `site/page_images.json`. Blocked only on the source PDFs.
 
 ## Open, in order
 

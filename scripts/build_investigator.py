@@ -262,11 +262,19 @@ def main(out):
 
     pidx, npages = build_page_index()
 
+    # T2.5 page-image config. Front-end config, not evidence, so it lives in
+    # site/ and never in spine/. An empty template means no host is configured
+    # yet, and the tool says exactly that rather than showing a broken frame.
+    pimg = {"url_template": "", "verified_on": ""}
+    cfg = os.path.join(ROOT, "site", "page_images.json")
+    if os.path.exists(cfg):
+        pimg = json.load(open(cfg))
+
     build = git_build()
     data = {"built": build["built"], "build": build, "docs": docs, "segs": segs, "media": media,
             "ents": ents, "etotal": n_ment, "pidx": pidx, "npages": npages,
             "oidx": oidx, "ocr_fmt": ocr_fmt, "ocr_hdr": ocr_hdr,
-            "conf_floor": CONF_FLOOR, "red": red}
+            "conf_floor": CONF_FLOOR, "red": red, "pimg": pimg}
 
     tpl = open(os.path.join(ROOT, "site", "investigator.html")).read()
     payload = json.dumps(data, separators=(",", ":"))
@@ -288,7 +296,10 @@ def main(out):
           + ("  (page-per-row: no per-word scores yet, so nothing is dimmed)"
              if ocr_fmt == "page" else "")
           + f"\n  redaction blocks: {sum(sum(v.values()) for v in red.values())} across "
-            f"{sum(len(v) for v in red.values())} pages")
+            f"{sum(len(v) for v in red.values())} pages"
+          + f"\n  page images: " + (f"template set, verified {pimg.get('verified_on') or 'never'}"
+                                    if pimg.get("url_template") else
+                                    "no host configured — the page view says so"))
 
 
 if __name__ == "__main__":
