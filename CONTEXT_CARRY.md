@@ -71,6 +71,12 @@ tool and leads with them. Both read the same spine; neither writes to it.
    person (H. Guyford Stever); reject that candidate and record why.
 7. **Fifth release (2026-08-07)** downloaded but not reconciled against the manifest. Do
    not describe the index as complete until it is.
+9. **T12 cross-modal correspondence** — spec in `docs/T12_correspondence.md`, nine
+   acceptance criteria, not built. Tier A burned-in text is the only recordable key; ASR is
+   search and corroboration only. Candidates land in `review/correspondences.csv`, never
+   `spine/`. Independent of T11 for extraction. Measured download volume is ~8.9 GB, not the
+   ~34 GB in the spec.
+
 8. **T10 Layer 5 co-presence** — spec in `docs/T10_copresence.md`, eleven acceptance
    criteria, not built. Payload verified against the corpus: build gate lands exactly on
    6,124 R / 818 L / 1,719 N = 8,661; `read` run-strings 17.1 KB, `mentions` map 213.5 KB,

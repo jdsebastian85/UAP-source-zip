@@ -1,4 +1,24 @@
 sources/
+
+# Media must never be committed (T12 criterion 4). Note this is deliberately
+# by extension and by output directory, never a blanket *.jpg: the 112 video
+# contact sheets under spine/ are tracked evidence and must stay tracked.
 *.mp4
+*.mov
+*.mkv
+*.avi
+*.webm
+*.m4v
+*.wav
+*.mp3
+*.m4a
+*.flac
 *.zip
+
+# T12 / T2.5 derived assets — regenerable, large, and not evidence
+frames/
+page_images/
+work/media/
+work/tmp/
+
 __pycache__/

@@ -461,10 +461,10 @@ same principle as the comb itself.
 
 ## T12. Media pass — ASR and frame sampling (decisions recorded 2026-08-09)
 
-**The spec was written but never reached this sandbox** — same file-card gap as the T10
-spec. Get the document before building. The four decisions below are recorded from the
-owner's summary, with agreement or objection noted, so nothing is lost if the file goes
-missing again.
+**Spec received 2026-08-09 and transcribed to `docs/T12_correspondence.md`** — nine
+acceptance criteria, the tier rules, the sampling policy, the queue schema and the
+correspondence record. That file governs; the notes below are the decisions with agreement
+or objection against each.
 
 ### 1. ASR is a search index, never a correspondence key — AGREED
 
@@ -525,6 +525,12 @@ download is indistinguishable from a complete one.
 
 Resume logic remains the thing that decides whether the run finishes: verify by size and
 hash after each file, never by existence alone.
+
+### Ordering note from the spec
+
+T12 is **independent of T11**. Burned-text OCR generates its own per-word confidence from
+scratch, so extraction does not inherit the two-floor contradiction — only display and
+thresholding wait on T11. Extract now, gate later.
 
 ### Open question — does ASR confidence unblock T10 criterion 11?
 
