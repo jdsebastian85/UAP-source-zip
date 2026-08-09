@@ -40,6 +40,7 @@ scripts/
 site/          templates for both builds
 index.html     public reader — the credibility artifact, no Drive links
 investigate.html   working tool — Drive links, page reader, stars and notes
+link_extractor.html  standalone: any JSON/CSV in, openable Drive links + gdown script out
 ```
 
 ## Two front ends, on purpose
