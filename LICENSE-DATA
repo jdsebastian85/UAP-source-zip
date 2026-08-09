@@ -1,0 +1,48 @@
+# Licence — corpus data
+
+Three different things live in this repository and they carry three different
+terms. Collapsing them into one licence would misstate all three.
+
+## 1. The underlying documents and media — public domain
+
+The released PDFs and video are works of the United States federal government
+and are not subject to copyright in the United States (17 U.S.C. § 105). They
+are not ours to license and we make no claim over them.
+
+Caveat: a federal release can contain third-party material — a contractor's
+report, a press clipping, a photograph taken by someone outside government —
+that carries its own rights. Public domain applies to the government's own
+work, not automatically to everything reproduced inside a government file.
+
+## 2. The spine — CC BY 4.0
+
+SPDX-License-Identifier: CC-BY-4.0
+
+Everything under spine/ is a derived database: manifest.csv, pages.jsonl,
+segments.csv, entities.csv, entities_normalized.csv, gaps.csv, media.csv,
+media_links.csv, ocr_recovered.csv, aliases.yml, the drive listing, and the
+schema they share.
+
+The facts in it come from public-domain documents. The selection, structure,
+extraction rules, normalization decisions and gap taxonomy are original work
+and are licensed under Creative Commons Attribution 4.0 International.
+
+  Deed:  https://creativecommons.org/licenses/by/4.0/
+  Legal: https://creativecommons.org/licenses/by/4.0/legalcode
+
+Attribution is the whole point of choosing BY over CC0: this corpus is meant
+to be cited, not silently absorbed. See CITATION.cff for how.
+
+## 3. The code — MIT
+
+See LICENSE.
+
+---
+
+Note on the choice. CC0 would place the spine in the public domain and remove
+the attribution requirement. That was considered and rejected, because the
+stated goal is that researchers cite the corpus rather than reuse it silently.
+Switching to CC0 is a one-file change if that goal changes — but it cannot be
+un-done for copies already distributed under it, so it is worth deciding once.
+
+This is a starting point drafted by a maintainer, not legal advice.

@@ -84,6 +84,26 @@ Judging what a clip actually shows, deciding what counts as a contradiction, and
 design calls. Code runs the pipeline; a conversation is better for looking at things
 and deciding what they mean.
 
+## Licence and citation
+
+Three different things, three different terms — collapsing them would misstate all three.
+
+| What | Terms | File |
+|---|---|---|
+| The released PDFs and video | US government work, public domain (17 U.S.C. § 105) | `LICENSE-DATA` |
+| The spine — everything under `spine/` | **CC BY 4.0** | `LICENSE-DATA` |
+| The code — `scripts/`, `site/`, built pages | **MIT** | `LICENSE` |
+
+The facts in the spine come from public-domain documents. The selection, structure,
+extraction rules, normalization decisions and gap taxonomy are original work, and BY was
+chosen over CC0 deliberately: this corpus is meant to be cited rather than silently
+absorbed. `CITATION.cff` gives the citation — GitHub renders a "Cite this repository"
+button from it.
+
+A federal release can still contain third-party material with its own rights. Public domain
+covers the government's own work, not automatically everything reproduced inside a
+government file.
+
 ## Data discipline in one line
 
 Every stored value is verbatim with a cite, absence is recorded rather than explained,

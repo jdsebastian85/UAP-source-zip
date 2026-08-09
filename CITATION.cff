@@ -1,0 +1,31 @@
+cff-version: 1.2.0
+message: "If you use this corpus, please cite it."
+title: "PURSUE UAP Release Corpus"
+abstract: >-
+  A structured index of a Department of War / PURSUE initiative UAP
+  declassified document and media release. 211 documents across 8,661 pages
+  and 112 catalogued video files, indexed into a fixed six-layer spine that
+  records what the documents say and where they say it, with page-level
+  citations throughout. Absence is recorded rather than explained,
+  contradictions are preserved side by side rather than reconciled, and
+  extracted entities are marked as pattern candidates rather than verified
+  facts. Coverage gaps are published alongside the data: 1,719 pages carry no
+  text layer and 818 fall below the OCR confidence floor, so a null result can
+  be told apart from an unread page.
+type: dataset
+# Replace with your legal name if you want personal rather than entity
+# attribution — this is the string that will appear in every citation.
+authors:
+  - name: "Lyriqal Digital Media"
+    website: "https://github.com/jdsebastian85"
+repository-code: "https://github.com/jdsebastian85/pursue-corpus"
+url: "https://jdsebastian85.github.io/pursue-corpus/"
+license: CC-BY-4.0
+keywords:
+  - UAP
+  - FOIA
+  - declassified documents
+  - document corpus
+  - OCR
+  - provenance
+  - archival indexing

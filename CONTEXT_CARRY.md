@@ -78,6 +78,17 @@ tool and leads with them. Both read the same spine; neither writes to it.
    decided — held out, with a visible count of segments not searched. The `relations.html`
    fixture is a demonstration only and is not in the repo.
 
+## Launch readiness (T11 in TASKS.md)
+
+Licensed and citable as of 2026-08-09: documents public domain, spine CC BY 4.0, code MIT,
+`CITATION.cff` present. Workflow audit done — there is no `.github/` directory, so no
+scheduled CI exists and clone counts are not self-inflicted.
+
+Still open, in the owner's order: Cloudflare beacon; **resolve the two-floor contradiction
+(0.90 page-quality gap threshold vs the published 60 per-word display floor) — this blocks
+T10, because the comb's hollow ticks render off one of them**; prebuilt summary JSON for
+first paint; tell a human audience; Internet Archive upload.
+
 ## Two corrections to the 2026-08-08 brief
 
 - It lists a **reading room** page built by `build_reading_room.py`. Neither the script nor

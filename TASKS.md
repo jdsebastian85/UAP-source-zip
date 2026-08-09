@@ -459,6 +459,42 @@ same principle as the comb itself.
 
 ---
 
+## T11. Launch-readiness queue (owner's ordering, 2026-08-09)
+
+Ordered by cheapest-and-most-irreversible-if-skipped, not by size.
+
+1. **LICENSE + CITATION.cff — DONE 2026-08-09.** 54 copies were already out with no terms
+   attached, and copies that exist cannot be retroactively licensed. Three-way split:
+   released documents are US government work in the public domain, the spine is CC BY 4.0,
+   the code is MIT. BY over CC0 because the stated goal is to be cited rather than silently
+   absorbed. See `LICENSE`, `LICENSE-DATA`, `CITATION.cff` and the README section.
+2. **Audit `.github/workflows/` — DONE 2026-08-09, nothing found.** There is no `.github/`
+   directory in the repo. No workflow files exist anywhere, and `schedule:` appears in no
+   YAML — the only YAML is `spine/aliases.yml`. The runs visible in the Actions tab are
+   GitHub's built-in `dynamic/pages/pages-build-deployment`, which is push-triggered, at
+   roughly one per push. **Scheduled CI cannot account for the clone count.** Traffic
+   conclusions drawn from it are not self-inflicted.
+3. **Cloudflare beacon.** No site measurement exists at all today, and the launch window is
+   the one period that cannot be reconstructed later.
+4. **Resolve the two-floor contradiction — NOT STARTED, and it blocks T10.** The gap flags
+   threshold at 0.90 (a page-level OCR quality score, 0–1) while the published display floor
+   is 60 (a tesseract per-word confidence, 0–100). These are different scales measuring
+   different things, so "below the floor" currently has two meanings. T10's comb renders its
+   hollow ticks off one of them. Pick one, document which and why, and make
+   `verify_spine.py` assert it. Until then the comb would make a coverage claim the data
+   does not support — the exact failure the project exists to avoid, and the reason this
+   must land **before** T10 is built, not after.
+5. **Prebuilt summary JSON for first paint.** 32 MB loads before anything renders. Biggest
+   conversion lever available and it touches nothing in the spine.
+6. **Tell someone.** No human has seen it; the traffic is automated indexing. Candidates:
+   r/UFOs, r/UAP, the Black Vault community, the FOIA/MuckRock crowd, Hacker News — where
+   the angle is the coverage-comb epistemics, not the subject matter. One post, one honest
+   description of what is indexed and what is not.
+7. **Internet Archive upload.** Solves the zipped-PDF blocker, the war.gov removal risk, and
+   supplies an independent download counter GitHub cannot give.
+
+---
+
 ## Commercial notes (standing instruction: surface these unprompted)
 
 - The site stays free. The material is public domain and the project's credibility
