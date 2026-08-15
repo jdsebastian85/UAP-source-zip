@@ -1,0 +1,5 @@
+{
+  "url_template": "",
+  "verified_on": "",
+  "note": "T2.5 page images. Set url_template once images are hosted, then re-run scripts/build_investigator.py. Placeholders: {release_id} (URL-encoded), {page}, {page04} (zero-padded to 4). scripts/render_page_images.py writes <out>/<release_id>/p0001.jpg, so a plain static host is '<base>/{release_id}/p{page04}.jpg'. Leave empty until a host exists — an empty template makes the tool say no images are configured, which is the truth. Do not guess an Internet Archive URL form: upload an item, observe the real per-page URL, paste it here, and put the date in verified_on."
+}
