@@ -1,0 +1,7 @@
+{
+  "url_template": "https://jdsebastian85.github.io/pursue-corpus/page_images/{doc_id}/page-{n:03d}.webp",
+  "format": "webp",
+  "dpi": 150,
+  "quality": 80,
+  "notes": "After running scripts/render_page_images.py, the images will live at site/page_images/<doc_id>/page-001.webp etc. Update the domain or path in url_template if you host the images elsewhere (R2, Releases, etc.)."
+}
