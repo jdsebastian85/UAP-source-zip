@@ -276,7 +276,7 @@ def main(out):
             "oidx": oidx, "ocr_fmt": ocr_fmt, "ocr_hdr": ocr_hdr,
             "conf_floor": CONF_FLOOR, "red": red, "pimg": pimg}
 
-    tpl = open(os.path.join(ROOT, "site", "investigator.html")).read()
+    tpl = open(os.path.join(ROOT, "site", "investigator.html"), encoding="utf-8").read()
     payload = json.dumps(data, separators=(",", ":"))
     # The payload sits inside a <script>; a literal </script> in any corpus string
     # would close it early. Nothing else about the JSON changes.
@@ -284,7 +284,7 @@ def main(out):
     html = tpl.replace("__DATA__", payload)
     if os.path.dirname(out):
         os.makedirs(os.path.dirname(out), exist_ok=True)
-    open(out, "w").write(html)
+    open(out, "w", encoding="utf-8").write(html)
 
     n_link = sum(1 for m in media if m["st"] == "INDEXED")
     n_ocr = sum(len(v) for v in oidx.values())
