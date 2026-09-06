@@ -1,0 +1,189 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>PURSUE — cool instrument palette</title>
+<style>
+:root{
+  --bg:#f3f5f8; --panel:#ffffff; --panel-2:#eef1f5; --line:#d3dae3;
+  --ink:#131822; --dim:#566277;
+  --accent:#1f6f92; --accent-ink:#ffffff; --accent-soft:#e2eef4;
+  --mark:#cfe6ee; --warn:#b23a30; --warn-soft:#f6e4e2;
+  --comb-solid:#5f7f96; --comb-hollow:#9aa7b6; --comb-amber:#b3701f;
+  --worked:var(--accent);
+  --radius:10px; --radius-sm:6px;
+  --glass-bg:rgba(255,255,255,.72); --glass-blur:12px; --glass-hair:rgba(19,24,34,.08);
+  --shadow-1:0 1px 2px rgba(19,24,34,.10); --shadow-2:0 6px 20px rgba(19,24,34,.12);
+}
+:root[data-theme="dark"]{
+  --bg:#0e1116; --panel:#151a21; --panel-2:#1b212b; --line:#283040;
+  --ink:#e6ebf2; --dim:#92a0b3;
+  --accent:#4aa3c7; --accent-ink:#071016; --accent-soft:#12303c;
+  --mark:#244a54; --warn:#e0776f; --warn-soft:#2a1a18;
+  --comb-solid:#6f8ea3; --comb-hollow:#3a4653; --comb-amber:#d98a3a;
+  --glass-bg:rgba(21,26,33,.72); --glass-hair:rgba(255,255,255,.06);
+  --shadow-1:0 1px 2px rgba(0,0,0,.40); --shadow-2:0 8px 24px rgba(0,0,0,.50);
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg); color:var(--ink);
+  font:15px/1.5 ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  -webkit-text-size-adjust:100%; padding-bottom:60px}
+header{position:sticky; top:0; z-index:10; background:var(--glass-bg);
+  -webkit-backdrop-filter:blur(var(--glass-blur)); backdrop-filter:blur(var(--glass-blur));
+  border-bottom:1px solid var(--line); box-shadow:0 1px 0 var(--glass-hair) inset, var(--shadow-1);
+  padding:12px 16px; display:flex; align-items:center; gap:10px}
+header .mark{width:26px; height:26px; border-radius:7px; flex:0 0 auto;
+  background:linear-gradient(135deg,var(--accent),color-mix(in oklab,var(--accent),#000 30%));
+  box-shadow:var(--shadow-1); position:relative}
+header .mark::after{content:""; position:absolute; inset:7px 6px; border:2px solid var(--accent-ink);
+  border-radius:50%; opacity:.9; border-right-color:transparent; transform:rotate(20deg)}
+header h1{font-size:15px; margin:0; font-weight:650; letter-spacing:.2px}
+header .sub{font-size:11px; color:var(--dim); font-weight:400; display:block; margin-top:1px}
+header .sp{flex:1}
+.tbtn{font:inherit; font-size:13px; background:var(--panel); color:var(--ink);
+  border:1px solid var(--line); border-radius:8px; padding:6px 11px; cursor:pointer; box-shadow:var(--shadow-1)}
+main{max-width:820px; margin:0 auto; padding:16px}
+h2{font-size:11px; letter-spacing:.6px; text-transform:uppercase; color:var(--dim);
+  font-weight:700; margin:26px 0 10px}
+.lead{color:var(--dim); font-size:13px; margin:0 0 14px}
+.sw{display:grid; grid-template-columns:repeat(auto-fill,minmax(150px,1fr)); gap:8px}
+.chip{border:1px solid var(--line); border-radius:var(--radius); overflow:hidden; background:var(--panel)}
+.chip .col{height:52px}
+.chip .lab{padding:7px 9px; font-size:11.5px}
+.chip .lab b{display:block; font-size:12.5px; margin-bottom:1px}
+.chip .lab code{color:var(--dim); font-size:11px}
+.card{background:var(--panel); border:1px solid var(--line); border-radius:var(--radius);
+  padding:12px 13px; box-shadow:var(--shadow-1); margin-bottom:10px}
+.card.elev{background:var(--panel-2); box-shadow:var(--shadow-2)}
+.pill{display:inline-block; font-size:11px; padding:2px 7px; border-radius:99px;
+  border:1px solid var(--line); color:var(--dim); margin:2px 3px 0 0; white-space:nowrap}
+.pill.on{background:var(--accent-soft); color:var(--accent); border-color:transparent; font-weight:600}
+.pill.warn{color:var(--warn); border-color:var(--warn)}
+.act{font:inherit; font-size:13px; background:var(--panel); color:var(--ink);
+  border:1px solid var(--line); border-radius:8px; padding:8px 12px; cursor:pointer; box-shadow:var(--shadow-1)}
+.act.primary{background:var(--accent); color:var(--accent-ink); border-color:transparent}
+.t{font-weight:600; font-size:14.5px}
+.m{font-size:12px; color:var(--dim); margin-top:4px}
+/* combs */
+.comblab{display:flex; align-items:center; gap:8px; font-size:12px; color:var(--dim); margin:0 0 5px}
+.comblab b{color:var(--ink); font-weight:600}
+.comb{display:flex; flex-wrap:wrap; gap:3px; margin-bottom:12px}
+.tick{width:12px; height:18px; border-radius:2px; border:1px solid var(--line); background:transparent;
+  position:relative}
+/* larger transparent hit area for phone */
+.tick::before{content:""; position:absolute; inset:-6px; }
+.tick.solid{background:var(--comb-solid); border-color:transparent}
+.tick.hollow{background:transparent; border-color:var(--comb-hollow); border-style:solid}
+.tick.amber{background:var(--comb-amber); border-color:transparent}
+.tick.worked{background:var(--worked); border-color:transparent}
+.legend{display:flex; gap:14px; flex-wrap:wrap; font-size:11.5px; color:var(--dim); margin:2px 0 14px}
+.legend span{display:flex; align-items:center; gap:6px}
+.key{width:16px; height:12px; border-radius:2px; border:1px solid var(--line)}
+.key.solid{background:var(--comb-solid); border-color:transparent}
+.key.hollow{background:transparent; border-color:var(--comb-hollow)}
+.key.amber{background:var(--comb-amber); border-color:transparent}
+.key.worked{background:var(--worked); border-color:transparent}
+/* evidence */
+.pagetext{white-space:pre-wrap; word-break:break-word;
+  font:var(--mono); background:var(--panel); border:1px solid var(--line);
+  border-radius:var(--radius); padding:12px}
+.unclear{opacity:.45; border-bottom:1px dotted currentColor; cursor:help}
+.redblk{display:inline-block; background:currentColor; opacity:.82; border-radius:2px;
+  width:5.5em; height:1em; margin:0 .15em; position:relative; top:.15em}
+mark{background:var(--mark); color:inherit; border-radius:2px; padding:0 1px}
+.warnbox{border:1px solid var(--warn); color:var(--warn); background:var(--warn-soft);
+  border-radius:var(--radius); padding:10px 12px; font-size:13px}
+.note{font-size:12.5px; color:var(--dim); margin-top:8px}
+</style>
+</head>
+<body>
+<header>
+  <div class="mark"></div>
+  <div>
+    <h1>PURSUE investigator</h1>
+    <span class="sub">an anthro-tech.org project</span>
+  </div>
+  <span class="sp"></span>
+  <button class="tbtn" id="tog">◐ theme</button>
+</header>
+<main>
+  <p class="lead">A live preview of the cool-instrument palette. The header above is chrome —
+    it uses glass and depth. Everything in the evidence section is flat and opaque on purpose.
+    Toggle the theme to see both.</p>
+
+  <h2>Palette</h2>
+  <div class="sw">
+    <div class="chip"><div class="col" style="background:var(--bg)"></div><div class="lab"><b>ground</b><code>--bg</code></div></div>
+    <div class="chip"><div class="col" style="background:var(--panel)"></div><div class="lab"><b>panel</b><code>--panel</code></div></div>
+    <div class="chip"><div class="col" style="background:var(--accent)"></div><div class="lab"><b>accent · interactive/human</b><code>--accent</code></div></div>
+    <div class="chip"><div class="col" style="background:var(--comb-solid)"></div><div class="lab"><b>machine fact</b><code>--comb-solid</code></div></div>
+    <div class="chip"><div class="col" style="background:var(--comb-amber)"></div><div class="lab"><b>unreadable (only amber)</b><code>--comb-amber</code></div></div>
+    <div class="chip"><div class="col" style="background:var(--warn)"></div><div class="lab"><b>warning/error</b><code>--warn</code></div></div>
+  </div>
+
+  <h2>The two combs, stacked — this is the point of T10</h2>
+  <p class="lead">One release, 40 pages. The top row is what a machine can read. The bottom row
+    is what a human has actually worked. The gap between them — pages a machine can read that
+    nobody has opened — is the thing worth looking at, and today nothing shows it.</p>
+  <div class="card">
+    <div class="comblab"><b>Machine readability</b> <span>solid shipped · hollow below floor · amber no text layer</span></div>
+    <div class="comb" id="mrow"></div>
+    <div class="comblab"><b>Human coverage</b> <span>filled where a reader marked the page worked</span></div>
+    <div class="comb" id="hrow"></div>
+    <div class="legend">
+      <span><i class="key solid"></i> shipped text</span>
+      <span><i class="key hollow"></i> below OCR floor</span>
+      <span><i class="key amber"></i> no text layer</span>
+      <span><i class="key worked"></i> worked by a human</span>
+    </div>
+    <div class="note">Amber appears nowhere else in the interface. A comb can never render
+      without its denominator, and it is never dropped on a narrow screen.</div>
+  </div>
+
+  <h2>Chrome — depth and glass allowed</h2>
+  <div class="card elev">
+    <div class="t">DOW-UAP-D092</div>
+    <div class="m">Western US Event — case analysis</div>
+    <div style="margin-top:8px">
+      <span class="pill">85 pp</span>
+      <span class="pill">OCR 0.71</span>
+      <span class="pill warn">12 no text</span>
+      <span class="pill on">43/85 worked</span>
+    </div>
+    <div style="margin-top:11px; display:flex; gap:8px; flex-wrap:wrap">
+      <button class="act primary">Open</button>
+      <button class="act">Next not started →</button>
+    </div>
+  </div>
+
+  <h2>Evidence layer — flat, opaque, full contrast, never glass</h2>
+  <div class="pagetext">The witness reported the object at an estimated <mark>500 to 600 meters</mark> distance, moving <span class="unclear" title="confidence 41 — below the floor of 60">nortnward</span> against the cloud layer. Subsequent AARO assessment placed the range at approximately 1,050 meters. Name of reporting officer <span class="redblk" title="redaction block on the page"></span> withheld.</div>
+  <div class="note">A word the OCR was unsure of is dimmed with its score, never shown as if it
+    were certain. A redaction is a drawn block, not the typed word. The two distance figures
+    contradict and both stand, uncited-resolution is not the tool's job.</div>
+  <div class="warnbox" style="margin-top:12px">No text for this page from either source. The page
+    image has not been read — this is a gap in the transcript, not a blank page in the release.</div>
+</main>
+<script>
+(function(){
+  var m = document.getElementById("mrow"), h = document.getElementById("hrow");
+  // A plausible 40-page release: mostly shipped text, a band of no-text-layer scans,
+  // a few below-floor pages. Human coverage is partial and stops before the scans.
+  var machine = [], human = [];
+  for (var i=0;i<40;i++){
+    var s = (i>=22 && i<=31) ? "amber" : (i%9===4 ? "hollow" : "solid");
+    machine.push(s);
+    human.push(i<18 && i%5!==3 ? "worked" : "");   // worked the readable front, not the scans
+  }
+  machine.forEach(function(s){ var b=document.createElement("div"); b.className="tick "+s; m.appendChild(b); });
+  human.forEach(function(s){ var b=document.createElement("div"); b.className="tick "+(s||""); h.appendChild(b); });
+  document.getElementById("tog").onclick = function(){
+    var r=document.documentElement, cur=r.getAttribute("data-theme");
+    r.setAttribute("data-theme", cur==="dark" ? "light" : "dark");
+  };
+})();
+</script>
+</body>
+</html>
