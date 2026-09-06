@@ -34,7 +34,7 @@ the text layer. They are byte-indexed and fetched a page at a time, exactly
 like pages.jsonl.
 """
 import argparse, csv, json, os, re, glob, subprocess
-from collections import defaultdict
+from collections import defaultdict, Counter
 from datetime import date
 
 SPINE = os.environ.get("SPINE", "spine")
@@ -174,8 +174,14 @@ def flush(cur):
 
 
 def build_page_index():
-    """release_id -> [[pdf_page, byte_offset, byte_length], ...] into pages.jsonl."""
+    """release_id -> [[pdf_page, byte_offset, byte_length], ...] into pages.jsonl.
+
+    Also returns the set of pages carrying no text layer, because T10's
+    readability run-strings need per-page state and this is the only pass over
+    pages.jsonl. Reading the 32 MB file twice to avoid returning a third value
+    would be the wrong trade."""
     idx = defaultdict(list)
+    notext = set()
     npages = 0
     with open(sp("pages.jsonl"), "rb") as f:
         off = 0
@@ -183,15 +189,75 @@ def build_page_index():
             n = len(raw)
             rec = json.loads(raw)
             idx[rec["release_id"]].append([rec["pdf_page"], off, len(raw.rstrip(b"\n"))])
+            if rec.get("no_text_layer"):
+                notext.add((rec["release_id"], rec["pdf_page"]))
             off += n
             npages += 1
-    return idx, npages
+    return idx, npages, notext
+
+
+# T10 readability. Published figures, and they are load-bearing: the same three
+# numbers appear in CITATION.cff's abstract and in the README, so they cannot be
+# allowed to drift quietly. If the corpus legitimately grows — the fifth release
+# is still unreconciled — these move deliberately, together with those files.
+READ_EXPECT = {"R": 6124, "L": 818, "N": 1719}
+
+
+def readability_runs(pidx, notext, lowpages):
+    """Per release, an RLE run-string over page state: R text layer, L below the
+    0.90 page-level legibility proxy, N no text layer.
+
+    N wins a tie by construction — ingest.py logs LOW_OCR_QUALITY in an elif
+    after the no-text branch, and verify_spine.py asserts the two never overlap.
+    The tie is resolved here anyway rather than assumed, because a page that was
+    never read must never be reported as merely hard to read.
+
+    Returns (runs, counts, expanded) so the caller can gate on a round trip
+    rather than trusting the encoder."""
+    runs, counts, expanded = {}, Counter(), {}
+    for rid, rows in pidx.items():
+        state = []
+        for pg, _off, _len in rows:
+            if (rid, pg) in notext:
+                st = "N"
+            elif (rid, pg) in lowpages:
+                st = "L"
+            else:
+                st = "R"
+            state.append(st)
+            counts[st] += 1
+        out, i = [], 0
+        while i < len(state):
+            j = i
+            while j < len(state) and state[j] == state[i]:
+                j += 1
+            out.append("%s%d" % (state[i], j - i))
+            i = j
+        runs[rid] = ",".join(out)
+        expanded[rid] = state
+    return runs, counts, expanded
+
+
+def expand_runs(rs):
+    """Inverse of the encoder, used to gate the build against itself."""
+    out = []
+    for part in rs.split(","):
+        if not part:
+            continue
+        out.extend(part[0] * int(part[1:]))
+    return out
 
 
 def main(out):
     gaps = defaultdict(lambda: defaultdict(int))
+    lowpages = set()
     for r in csv.DictReader(open(sp("gaps.csv"), encoding="utf-8")):
         gaps[r["release_id"]][r["gap_type"]] += 1
+        if r["gap_type"] == "LOW_OCR_QUALITY":
+            try:
+                lowpages.add((r["release_id"], int(r["pdf_page"])))
+            except ValueError:
+                pass
 
     docs = []
     for r in csv.DictReader(open(sp("manifest.csv"), encoding="utf-8")):
@@ -260,7 +326,30 @@ def main(out):
             k = int(r["pdf_page"])
             red[r["release_id"]][k] = red[r["release_id"]].get(k, 0) + 1
 
-    pidx, npages = build_page_index()
+    pidx, npages, notext = build_page_index()
+
+    # T10 task 2.1 — readability run-strings, and the gate the spec requires.
+    # The panel must not build on numbers that disagree with their source, so a
+    # failure here stops the build rather than shipping a comb that overstates
+    # what was read.
+    runs, rcounts, expanded = readability_runs(pidx, notext, lowpages)
+    rt = [rid for rid, st in expanded.items() if expand_runs(runs[rid]) != st]
+    if rt:
+        raise SystemExit(
+            "T10: %d release(s) do not survive a run-string round trip, first %s. "
+            "The encoder and the page state disagree; the comb must not build."
+            % (len(rt), rt[:3]))
+    if sum(rcounts.values()) != npages:
+        raise SystemExit("T10: run-strings cover %d pages, pages.jsonl has %d."
+                         % (sum(rcounts.values()), npages))
+    drift = {k: (rcounts[k], v) for k, v in READ_EXPECT.items() if rcounts[k] != v}
+    if drift:
+        raise SystemExit(
+            "T10: readability totals have moved from the published figures "
+            + ", ".join("%s %d->%d" % (k, was, now) for k, (now, was) in drift.items())
+            + ".\n     These numbers are published in CITATION.cff's abstract and in "
+              "README.md. If the corpus legitimately changed, update READ_EXPECT in this "
+              "script together with those files, in one commit. Do not silence this.")
 
     # T2.5 page-image config. Front-end config, not evidence, so it lives in
     # site/ and never in spine/. An empty template means no host is configured
@@ -269,6 +358,9 @@ def main(out):
     cfg = os.path.join(ROOT, "site", "page_images.json")
     if os.path.exists(cfg):
         pimg = json.load(open(cfg, encoding="utf-8"))
+
+    for d in docs:
+        d["read"] = runs.get(d["id"], "")
 
     build = git_build()
     data = {"built": build["built"], "build": build, "docs": docs, "segs": segs, "media": media,
@@ -297,6 +389,9 @@ def main(out):
              if ocr_fmt == "page" else "")
           + f"\n  redaction blocks: {sum(sum(v.values()) for v in red.values())} across "
             f"{sum(len(v) for v in red.values())} pages"
+          + f"\n  readability: R {rcounts['R']} / L {rcounts['L']} / N {rcounts['N']} "
+            f"in {sum(len(v) for v in runs.values())} bytes of run-string "
+            f"(L = page-level text-layer proxy, not a per-word confidence)"
           + f"\n  page images: " + (f"template set, verified {pimg.get('verified_on') or 'never'}"
                                     if pimg.get("url_template") else
                                     "no host configured — the page view says so"))
