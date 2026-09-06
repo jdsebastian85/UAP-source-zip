@@ -610,14 +610,26 @@ Ordered by cheapest-and-most-irreversible-if-skipped, not by size.
    conclusions drawn from it are not self-inflicted.
 3. **Cloudflare beacon.** No site measurement exists at all today, and the launch window is
    the one period that cannot be reconstructed later.
-4. **Resolve the two-floor contradiction — NOT STARTED, and it blocks T10.** The gap flags
-   threshold at 0.90 (a page-level OCR quality score, 0–1) while the published display floor
-   is 60 (a tesseract per-word confidence, 0–100). These are different scales measuring
-   different things, so "below the floor" currently has two meanings. T10's comb renders its
-   hollow ticks off one of them. Pick one, document which and why, and make
-   `verify_spine.py` assert it. Until then the comb would make a coverage claim the data
-   does not support — the exact failure the project exists to avoid, and the reason this
-   must land **before** T10 is built, not after.
+4. **Resolve the two-floor contradiction — RESOLVED 2026-09-06. T10 is unblocked.**
+   Read against the code rather than the docs, the two were never the same measurement.
+   0.90 tests `ingest.py:ocr_quality`, the share of alphanumeric-or-common-punctuation
+   characters in the publisher's **shipped** text layer on 0–1 — a deterministic
+   character-composition legibility proxy, not a confidence, never per-word, and the only
+   one of the two with corpus-wide data (818 pages). 60 is a tesseract **per-word**
+   confidence on 0–100 governing `[unclear]` display of `OCR_RECOVERED` words, and it
+   governs nothing today because `ocr_recovered.csv` is still page-per-row with no scores.
+   The contradiction was a naming collision: both got called an OCR floor.
+
+   **The comb's hollow tick keys off the 0.90 page-level proxy and must be labelled a
+   page-level text-layer legibility proxy, never "below the OCR confidence floor".**
+   Recorded in `CLAUDE.md` build invariants. `verify_spine.py` now enforces it: a
+   `LOW_OCR_QUALITY` row must carry `quality=` under 0.90, none may sit on a
+   `no_text_layer` page, none may cite a page absent from `pages.jsonl`, and R/L/N must
+   partition every page. It prints `R 6124  L 818  N 1719  total 8661`, matching the T10
+   build gate exactly. Both failure modes were negative-tested; the gate exits 1.
+
+   `docs/T10_copresence.md` carried the same mislabel in its payload section (its own
+   verification section was right) and now carries a correction note.
 5. **Prebuilt summary JSON for first paint.** 32 MB loads before anything renders. Biggest
    conversion lever available and it touches nothing in the spine.
 6. **Tell someone.** No human has seen it; the traffic is automated indexing. Candidates:

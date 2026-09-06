@@ -21,7 +21,17 @@ to `spine/`.
 `build_investigator.py` emits one additional embedded object. No new spine file.
 
 Readability travels as a run-string per release, not per page. `R` = text layer, `L` = below
-the published OCR floor of 60, `N` = no text layer. It embeds rather than fetches. **If a
+the published OCR floor of 60, `N` = no text layer.
+
+> **Corrected 2026-09-06 (T11).** The `L` label above is wrong and the spec's own verification
+> section below is right. `L` is derived from the `LOW_OCR_QUALITY` gap rows, which fire on a
+> **page-level text-layer legibility proxy under 0.90** (`ingest.py:ocr_quality`, a 0–1
+> character-composition measure over the shipped text layer). The published floor of 60 is a
+> per-word tesseract confidence on 0–100 that governs `[unclear]` display of recovered words
+> and backs no corpus-wide data yet. They are different measurements on different scales. The
+> comb's hollow tick means *this page has a text layer that scores poorly on legibility*, and
+> the UI must say that rather than "below the OCR confidence floor". See CLAUDE.md build
+> invariants. It embeds rather than fetches. **If a
 page carries both flags, `N` wins.**
 
 **Verification gate.** The run-strings must expand to exactly 6,124 R / 818 L / 1,719 N =

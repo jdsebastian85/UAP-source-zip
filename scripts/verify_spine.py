@@ -12,7 +12,7 @@ def load_csv(name, required):
     p = os.path.join(SP, name)
     if not os.path.exists(p):
         errs.append(f"{name}: missing"); return []
-    rows = list(csv.DictReader(open(p)))
+    rows = list(csv.DictReader(open(p, encoding="utf-8")))
     if rows:
         missing = required - set(rows[0].keys())
         if missing: errs.append(f"{name}: missing columns {sorted(missing)}")
@@ -53,15 +53,67 @@ for r in ent:
 pj = os.path.join(SP, "pages.jsonl")
 if os.path.exists(pj):
     seen = Counter()
-    for i, line in enumerate(open(pj), 1):
+    notext, quality = set(), {}
+    for i, line in enumerate(open(pj, encoding="utf-8"), 1):
         try: rec = json.loads(line)
         except Exception as e: errs.append(f"pages.jsonl:{i} bad JSON: {e}"); break
         seen[rec["release_id"]] += 1
+        key = (rec["release_id"], rec["pdf_page"])
+        quality[key] = float(rec.get("ocr_quality") or 0)
+        if rec.get("no_text_layer"): notext.add(key)
     for rid, n in pagecount.items():
         if rid in seen and seen[rid] != n:
             warns.append(f"pages.jsonl: {rid} has {seen[rid]} page records, manifest says {n}")
 else:
     errs.append("pages.jsonl: missing")
+
+# T11 — the two floors mean different things and must not drift into each other.
+# 0.90 is a page-level text-layer legibility proxy on 0-1 (ingest.py:ocr_quality).
+# 60 is a per-word tesseract confidence on 0-100 and governs display of recovered
+# words only. See CLAUDE.md build invariants. This gate enforces the page-level one,
+# which is the measure the coverage comb's hollow tick renders.
+QUALITY_FLOOR = 0.90
+if os.path.exists(pj) and gap:
+    bad_val, on_notext, missing = [], [], 0
+    lowset = set()
+    for r in gap:
+        if r["gap_type"] != "LOW_OCR_QUALITY":
+            continue
+        try:
+            key = (r["release_id"], int(r["pdf_page"]))
+        except ValueError:
+            continue
+        lowset.add(key)
+        d = (r.get("detail") or "")
+        if not d.startswith("quality="):
+            missing += 1
+        else:
+            try:
+                if float(d.split("=", 1)[1]) >= QUALITY_FLOOR: bad_val.append(key)
+            except ValueError:
+                missing += 1
+        if key in notext: on_notext.append(key)
+    if missing:
+        errs.append(f"gaps: {missing} LOW_OCR_QUALITY rows carry no parseable quality= detail")
+    if bad_val:
+        errs.append(f"gaps: {len(bad_val)} LOW_OCR_QUALITY rows at or above the "
+                    f"{QUALITY_FLOOR} page-quality floor {bad_val[:3]}")
+    if on_notext:
+        errs.append(f"gaps: {len(on_notext)} LOW_OCR_QUALITY rows on no_text_layer pages "
+                    f"{on_notext[:3]} — absence wins over illegibility")
+    # every page is exactly one of R / L / N, which is the comb's denominator
+    total = len(quality)
+    n_N = len(notext)
+    n_L = len(lowset - notext)
+    n_R = total - n_N - n_L
+    stray = [k for k in lowset if k not in quality]
+    if stray:
+        errs.append(f"gaps: {len(stray)} LOW_OCR_QUALITY rows cite pages absent from "
+                    f"pages.jsonl {stray[:3]}")
+    if n_R + n_L + n_N != total:
+        errs.append(f"comb partition does not cover every page: {n_R}+{n_L}+{n_N} != {total}")
+    print(f"readability R {n_R}  L {n_L}  N {n_N}  total {total} "
+          f"(L = page-level text-layer proxy < {QUALITY_FLOOR}, not a per-word confidence)")
 
 # duplicate hashes = duplicate ingest
 dupe = [h for h,c in Counter(r["sha256"] for r in man).items() if c > 1]

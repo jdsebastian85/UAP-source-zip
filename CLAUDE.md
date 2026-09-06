@@ -45,10 +45,38 @@ because a reader cannot tell which rows to trust once one row is wrong.
 byte-indexed at build time and the browser fetches individual page records from it with
 HTTP Range requests, so the bytes that were indexed and the bytes GitHub Pages serves have
 to be the same bytes. `core.autocrlf` is true on the owner's machine; without the `* -text`
-in `.gitattributes` the working copy gains one `` per line and every offset after the
+in `.gitattributes` the working copy gains one `
+` per line and every offset after the
 first is wrong, which breaks the transcript on every page but one. If the transcript ever
 reports "Page record did not parse", check `wc -c spine/pages.jsonl` against
 `git cat-file -s HEAD:spine/pages.jsonl` before looking anywhere else.
+
+**The two floors are different measurements and neither is a fallback for the other.**
+The corpus carries two numbers that both got called an OCR floor. They are not the same
+quantity, are not on the same scale, and are not interchangeable. Resolved 2026-09-06 (T11)
+by reading what the code actually computes:
+
+* **0.90 — the page-level text-layer legibility proxy.** `spine/ingest.py:75` computes
+  `ocr_quality` as the share of alphanumeric-or-common-punctuation characters in the
+  publisher's shipped text layer, on a 0–1 scale. It is a deterministic character-composition
+  heuristic over `TEXT_LAYER`. It is **not** a confidence, does not come from tesseract, and
+  is never per-word. A page below 0.90 gets a `LOW_OCR_QUALITY` gap row. This is the only one
+  of the two that has corpus-wide data behind it: 818 pages.
+* **60 — the per-word display floor.** Tesseract word confidence on 0–100, declared in
+  `scripts/build_investigator.py`. It governs one thing: recovered words scoring under it
+  render as `[unclear]` instead of as confident text, and per T2.3 must not reach Layer 3.
+  It applies only to `OCR_RECOVERED`. Today it governs almost nothing — `ocr_recovered.csv`
+  is still page-per-row with no per-word scores, so no word has a confidence to test.
+
+**The comb's hollow tick keys off the 0.90 page-level proxy, and must be labelled as a
+page-level text-layer legibility proxy — never as "below the OCR confidence floor".** The
+two never merge. When T2.3 populates per-word confidence corpus-wide, that is an additional
+measure with its own display rule, not a replacement for this one.
+
+`verify_spine.py` enforces the single meaning: every `LOW_OCR_QUALITY` row must carry a
+`quality=` under 0.90, no such row may sit on a `no_text_layer` page (absence wins over
+illegibility, as `ingest.py`'s `elif` already guarantees), and R/L/N must partition every
+page exactly once.
 
 **Read spine files with an explicit encoding.** They are UTF-8; Python on Windows defaults
 to cp1252 and will silently mojibake any non-ASCII character it finds.
