@@ -261,11 +261,91 @@ const dur = s => { s = Math.round(s); const m = Math.floor(s/60); return m ? m+"
 const mb = b => b >= 1e9 ? (b/1e9).toFixed(2)+" GB" : Math.round(b/1e6)+" MB";
 const $ = id => document.getElementById(id);
 
-/* ---------- routing ---------- */
+/* ---------- routing ---------- *
+ * Every view is a history entry, so the browser back button walks back through
+ * the tool the way it walks back through any site, and the scroll offset of a
+ * list is restored when you return to it. Surveying 211 releases means leaving
+ * and re-entering the same list hundreds of times, and being dropped at the top
+ * of it each time loses your place — which is the one thing a survey cannot
+ * afford. The view is also written to the URL, so a document or a single page
+ * can be bookmarked, shared, or reopened tomorrow.                            */
 let T = "docs", Q = "", SEL = null;
 const TABS = [["docs","Documents"],["media","Media"],["ents","Entities"],["marks","Marks"]];
+const VIEWS = ["docs","media","ents","marks","page"];
 
-function go(tab, sel){ T = tab; SEL = sel || null; window.scrollTo(0,0); render(); }
+/* Scroll offset waiting to be applied once the view it belongs to has drawn.
+ * null means "leave the scroll alone": re-rendering after a star or a note must
+ * not move the reader, and only a navigation says where to land. */
+let pendingScroll = null;
+
+function stateNow(){ return {T:T, Q:Q, SEL:SEL}; }
+
+function stateToHash(st){
+  const p = new URLSearchParams();
+  p.set("t", st.T);
+  if (st.Q) p.set("q", st.Q);
+  const s = st.SEL;
+  if (s) {
+    if (s.id != null) p.set("id", s.id);
+    if (s.pg != null) p.set("pg", s.pg);
+    if (s.i  != null) p.set("i",  s.i);
+    if (s.hl)         p.set("hl", s.hl);
+  }
+  return "#" + p.toString();
+}
+
+function hashToState(h){
+  const p = new URLSearchParams(String(h || "").replace(/^#/, ""));
+  const t = p.get("t");
+  if (!t || VIEWS.indexOf(t) < 0) return null;
+  const st = {T:t, Q:p.get("q") || "", SEL:null};
+  const id = p.get("id"), pg = p.get("pg"), i = p.get("i");
+  if (t === "page") {
+    if (!id || pg == null) return null;
+    st.SEL = {id:id, pg:+pg, hl:p.get("hl") || ""};
+  } else if (t === "ents" && i != null && i !== "") {
+    st.SEL = {i:+i};
+  } else if (id && (t === "docs" || t === "media")) {
+    st.SEL = {id:id};
+  }
+  return st;
+}
+
+function replaceRoute(scroll){
+  const st = stateNow();
+  try { history.replaceState({st:st, scroll:scroll}, "", stateToHash(st)); } catch(e){}
+}
+
+function go(tab, sel){
+  /* Stamp where the view being left was scrolled to onto its own history entry,
+   * before pushing the new one. That offset is what popstate restores. */
+  try { history.replaceState({st:stateNow(), scroll:window.scrollY}, "", stateToHash(stateNow())); } catch(e){}
+  T = tab; SEL = sel || null;
+  const st = stateNow();
+  try { history.pushState({st:st, scroll:0}, "", stateToHash(st)); } catch(e){}
+  pendingScroll = 0;
+  render();
+}
+
+/* A restore is applied on the frame after the view draws. page view fetches its
+ * text before it draws, so it restores late; every other view restores at once.
+ * Both funnel through wire(), which every view calls when it is done. */
+function applyScroll(){
+  if (pendingScroll == null) return;
+  const y = pendingScroll;
+  pendingScroll = null;
+  requestAnimationFrame(() => window.scrollTo(0, y));
+}
+
+window.addEventListener("popstate", ev => {
+  const st = (ev.state && ev.state.st) || hashToState(location.hash);
+  if (!st) return;
+  T = st.T; Q = st.Q || ""; SEL = st.SEL || null;
+  const box = $("q");
+  if (box && box.value !== Q) box.value = Q;
+  pendingScroll = (ev.state && typeof ev.state.scroll === "number") ? ev.state.scroll : 0;
+  render();
+});
 
 /* ---------- page text: byte-range fetch against spine/pages.jsonl ---------- *
  * The full text layer is 27 MB. Shipping it inside this file would make the
@@ -816,11 +896,16 @@ function wire(){
       M = {}; migratedNotice = ""; saveM(); render();
     }
   };
+  applyScroll();
 }
 
 $("tabs").onclick = ev => { const b = ev.target.closest("[data-tab]"); if (b) go(b.dataset.tab); };
 $("q").oninput = ev => { Q = ev.target.value.trim(); SEL = null;
-  if (T === "page" || T === "marks") T = "docs"; render(); };
+  if (T === "page" || T === "marks") T = "docs";
+  /* Replace rather than push: a query is edited keystroke by keystroke and
+   * every one of them would otherwise become a history entry to walk back. */
+  replaceRoute(0);
+  render(); };
 $("theme").onclick = () => {
   const cur = document.documentElement.getAttribute("data-theme");
   const next = cur === "dark" ? "light" : cur === "light" ? null : "dark";
@@ -835,6 +920,21 @@ $("foot").innerHTML = `Built from the spine at ${esc(D.built)}: ${D.docs.length}
   This is the working tool, not the public record. Media links point at one private Drive
   account and are access only. Entity rows are regex candidates. Contradictions in the corpus
   are kept side by side and are not resolved here.`;
+/* The browser restores its own scroll position on a back navigation, which
+ * fights the offset recorded per entry. Ours is the one that knows which view
+ * is being restored, so the browser's is turned off. */
+try { if ("scrollRestoration" in history) history.scrollRestoration = "manual"; } catch(e){}
+
+(function adoptRoute(){
+  const st = hashToState(location.hash);
+  if (st) {
+    T = st.T; Q = st.Q || ""; SEL = st.SEL || null;
+    const box = $("q");
+    if (box) box.value = Q;
+  }
+  replaceRoute(0);
+})();
+
 render();
 </script>
 </body>
