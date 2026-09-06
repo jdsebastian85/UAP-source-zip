@@ -149,7 +149,9 @@ opencv plus the source PDFs. That dependency is real and is called out here rath
 - One honest post describing what is indexed and what is not, aimed where the coverage-comb
   epistemics is the hook rather than the subject matter.
 - Publish the comb write-up as a standalone UI pattern under the AI v.Human thesis, PURSUE as
-  the worked example.
+  the worked example. **Drafted 2026-09-06 at `docs/PATTERN_coverage_comb.md`** — the pattern,
+  the five rules that make it work, measured implementation costs, the PURSUE worked example,
+  and the four other domains it applies to. Only the URL is still open.
 
 ---
 

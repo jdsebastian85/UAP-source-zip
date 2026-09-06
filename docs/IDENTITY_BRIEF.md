@@ -61,10 +61,21 @@ identical. That is a general failure and the fix is general. In this corpus 1,71
 pages carry no text layer — a null result over a 20% blind spot, presented as a null result,
 is a false statement about the record.
 
-**Name:** the Coverage Comb.
-**Home:** written up under the AI v.Human thesis as a standalone UI pattern, with PURSUE as
-the worked example — not as a PURSUE feature. `docs/T10_copresence.md` already says this in
-its own words and is the source text.
+**Name:** the **Coverage Comb**, and each tick in it is a **tessera** — one tile of a mosaic.
+
+The naming was settled deliberately. "Tessera" alone is the better metaphor: a mosaic with
+tiles missing announces its own incompleteness without a legend, which is the whole idea,
+whereas "comb" only describes the widget's shape. But TESSERA is a registered trademark
+(filed 2008, Tessera Technologies, now Xperi) covering semiconductors and *software in the
+field of image processing* — adjacent enough to a tool that renders page scans to be worth
+respecting. So the citable name stays descriptive and unencumbered, and the metaphor lives
+in the vocabulary instead: *the corpus is a mosaic with 1,719 tiles missing.* That sentence
+does the persuading; the name does the citing. If this ever becomes something sold rather
+than published, a real clearance search is the answer, not this note.
+
+**Home:** written up as a standalone UI pattern in `docs/PATTERN_coverage_comb.md`, with
+PURSUE as the worked example — not as a PURSUE feature. Ready to publish under the AI v.Human
+thesis. `docs/T10_copresence.md` remains the governing spec.
 **What travels with it:** the three-state tick (readable / poorly readable / unreadable), the
 rule that the comb cannot be suppressed at any viewport, and the rule that a zero result and
 its denominator ship together or neither ships. All three are enforced in this build and can
