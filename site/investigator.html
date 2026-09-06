@@ -77,6 +77,25 @@ button.act:active{opacity:.7}
   color:var(--dim); padding:2px 4px;
 }
 .star.on{color:var(--accent)}
+/* Human coverage. One tick per page, filled where a reader has said they
+   worked it. This is the human half of the comb: when T10 lands, its
+   machine-readability comb sits directly above this one and the disagreement
+   between the two rows — pages a machine can read that no human has looked at
+   — is the thing worth looking at. */
+.comb{display:flex; flex-wrap:wrap; gap:2px; margin-top:8px}
+.comb button{
+  width:11px; height:17px; padding:0; cursor:pointer; border-radius:2px;
+  border:1px solid var(--line); background:none;
+}
+.comb button.worked{background:var(--accent); border-color:transparent}
+.comb button.starred{box-shadow:inset 0 0 0 2px var(--accent)}
+.wbtn{
+  background:none; border:1px solid var(--line); border-radius:8px; font:inherit;
+  font-size:12px; color:var(--dim); padding:5px 9px; cursor:pointer; white-space:nowrap;
+}
+.wbtn.on{background:var(--accent-soft); color:var(--accent); border-color:transparent; font-weight:600}
+.covbar{display:flex; gap:6px; flex-wrap:wrap; align-items:center; margin:2px 0 10px}
+.covbar .lab{font-size:12px; color:var(--dim); margin-right:2px}
 .head{display:flex; align-items:flex-start; gap:8px}
 .head .t{flex:1}
 .back{
@@ -232,8 +251,15 @@ try {
 
 const saveM = () => { try { localStorage.setItem(LS, JSON.stringify(M)); } catch(e) {
   alert("Could not save. Browser storage may be full or blocked in private mode."); } };
-const mk = k => M[k] || (M[k] = {star:false, note:"", ts:0});
+const mk = k => M[k] || (M[k] = {star:false, note:"", worked:false, ts:0});
+/* isMarked drives the Marks tab, and stays star-or-note on purpose: coverage
+ * is a different claim from a mark, and a survey that worked 2,000 pages must
+ * not bury the handful of things the reader actually flagged. */
 const isMarked = k => !!M[k] && (M[k].star || (M[k].note||"").trim());
+const isWorked = k => !!(M[k] && M[k].worked);
+/* A record is only discarded when it makes no claim at all. Coverage counts as
+ * a claim, so clearing a star no longer throws away that the page was read. */
+const isEmpty = m => !m.star && !(m.note||"").trim() && !m.worked;
 /* Entity marks carry the verbatim spellings of the group at the time of
    marking. The key is type + normalized value, because that is what defines a
    group; the verbatim list is not identity (a group has several spellings) but
@@ -249,9 +275,14 @@ function stamp(k, m){
   return m;
 }
 function toggleStar(k, label){ const m = stamp(k, mk(k)); m.star = !m.star; m.label = label;
-  if (!m.star && !(m.note||"").trim()) delete M[k]; saveM(); render(); }
+  if (isEmpty(m)) delete M[k]; saveM(); render(); }
 function setNote(k, v, label){ const m = stamp(k, mk(k)); m.note = v; m.label = label;
-  if (!m.star && !v.trim()) delete M[k]; saveM(); }
+  if (isEmpty(m)) delete M[k]; saveM(); }
+/* Coverage is stated, never inferred. Opening a page does not mark it worked:
+ * the reader says so, because "I looked at this" is a claim about them and the
+ * tool has no way to observe it. */
+function toggleWorked(k, label){ const m = stamp(k, mk(k)); m.worked = !m.worked; m.label = label;
+  if (isEmpty(m)) delete M[k]; saveM(); render(); }
 
 /* ---------- tiny helpers ---------- */
 const esc = s => String(s==null?"":s).replace(/[&<>"']/g, c => (
@@ -278,12 +309,13 @@ const VIEWS = ["docs","media","ents","marks","page"];
  * not move the reader, and only a navigation says where to land. */
 let pendingScroll = null;
 
-function stateNow(){ return {T:T, Q:Q, SEL:SEL}; }
+function stateNow(){ return {T:T, Q:Q, SEL:SEL, COV:COV}; }
 
 function stateToHash(st){
   const p = new URLSearchParams();
   p.set("t", st.T);
   if (st.Q) p.set("q", st.Q);
+  if (st.COV && st.COV !== "all") p.set("cov", st.COV);
   const s = st.SEL;
   if (s) {
     if (s.id != null) p.set("id", s.id);
@@ -298,7 +330,8 @@ function hashToState(h){
   const p = new URLSearchParams(String(h || "").replace(/^#/, ""));
   const t = p.get("t");
   if (!t || VIEWS.indexOf(t) < 0) return null;
-  const st = {T:t, Q:p.get("q") || "", SEL:null};
+  const cov = p.get("cov");
+  const st = {T:t, Q:p.get("q") || "", COV:(COVS.indexOf(cov) > 0 ? cov : "all"), SEL:null};
   const id = p.get("id"), pg = p.get("pg"), i = p.get("i");
   if (t === "page") {
     if (!id || pg == null) return null;
@@ -340,7 +373,7 @@ function applyScroll(){
 window.addEventListener("popstate", ev => {
   const st = (ev.state && ev.state.st) || hashToState(location.hash);
   if (!st) return;
-  T = st.T; Q = st.Q || ""; SEL = st.SEL || null;
+  T = st.T; Q = st.Q || ""; SEL = st.SEL || null; COV = st.COV || "all";
   const box = $("q");
   if (box && box.value !== Q) box.value = Q;
   pendingScroll = (ev.state && typeof ev.state.scroll === "number") ? ev.state.scroll : 0;
@@ -407,10 +440,97 @@ function noteBox(k, label){
       placeholder="Kept on this device only. Export from the Marks tab.">${esc(n)}</textarea>`;
 }
 
+/* ---------- coverage ---------- *
+ * What a human has actually worked, as distinct from what the corpus contains
+ * and from what a machine can read. Stated by the reader, never inferred from
+ * a page being opened: the tool cannot observe reading, so it does not claim
+ * to. A release is "worked through" when every one of its pages is worked, or
+ * when the reader has marked the release itself assessed — two different
+ * claims, kept apart, neither standing in for the other.                     */
+const COVS = ["all","none","some","done"];
+let COV = "all";
+
+const docPages = id => (D.pidx[id]||[]).map(r => r[0]);
+
+function docCoverage(id){
+  const pages = docPages(id);
+  let w = 0;
+  for (const pg of pages) if (isWorked(kPage(id, pg))) w++;
+  return {worked:w, total:pages.length, assessed:isWorked(kDoc(id))};
+}
+function docState(c){
+  if (c.assessed || (c.total > 0 && c.worked === c.total)) return "done";
+  return c.worked > 0 ? "some" : "none";
+}
+function corpusCoverage(){
+  let started = 0, done = 0, pw = 0, pt = 0;
+  for (const d of D.docs){
+    const c = docCoverage(d.id), st = docState(c);
+    pw += c.worked; pt += c.total;
+    if (st !== "none") started++;
+    if (st === "done") done++;
+  }
+  return {started:started, done:done, pagesWorked:pw, pagesTotal:pt};
+}
+/* The next release with nothing worked, in list order, wrapping once. Survey
+ * work is a sweep, and the question it constantly asks is "what have I not
+ * looked at yet". */
+function nextUnworked(after){
+  const L = D.docs;
+  const start = after ? L.findIndex(d => d.id === after) + 1 : 0;
+  for (let i = start; i < L.length; i++)
+    if (docState(docCoverage(L[i].id)) === "none") return L[i];
+  for (let i = 0; i < Math.min(start, L.length); i++)
+    if (docState(docCoverage(L[i].id)) === "none") return L[i];
+  return null;
+}
+
+function workedBtn(k, label, onText, offText){
+  const on = isWorked(k);
+  return `<button class="wbtn ${on?"on":""}" data-worked="${esc(k)}" data-label="${esc(label)}"
+    aria-pressed="${on}">${on ? esc(onText) : esc(offText)}</button>`;
+}
+
+function coverageComb(id){
+  const pages = docPages(id), c = docCoverage(id);
+  return `<div class="src">Human coverage — ${c.worked} of ${c.total} pages worked</div>
+    <div class="card">
+      <div class="m">One tick per page. Click a tick to record that you have worked that page;
+        click a page number below to open it. Nothing here is inferred from opening a page —
+        this records only what you have said you worked.</div>
+      <div class="comb">${pages.map(pg => {
+        const k = kPage(id, pg), cls = (isWorked(k)?"worked":"") + (isMarked(k)?" starred":"");
+        return `<button data-worked="${esc(k)}" data-label="${esc(id+" p."+pg)}" class="${cls}"
+          title="p.${pg}${isWorked(k)?" · worked":""}${isMarked(k)?" · marked":""}"></button>`;
+      }).join("")}</div>
+    </div>`;
+}
+
 function docsView(){
   const q = Q.toLowerCase();
-  const rows = D.docs.filter(d => !q || (d.id+" "+d.s).toLowerCase().includes(q));
-  return `<p class="count">${rows.length} of ${D.docs.length} documents</p>` + (rows.length ? rows.map(d => `
+  const cc = corpusCoverage();
+  let rows = D.docs.filter(d => !q || (d.id+" "+d.s).toLowerCase().includes(q));
+  if (COV !== "all") rows = rows.filter(d => docState(docCoverage(d.id)) === COV);
+  const filt = [["all","All"],["none","Not started"],["some","In progress"],["done","Worked through"]];
+  const nx = nextUnworked();
+  const bar = `<div class="covbar">
+      <span class="lab">Coverage</span>
+      ${filt.map(([k,lab]) => `<button class="wbtn ${COV===k?"on":""}" data-cov="${k}">${lab}</button>`).join("")}
+      ${nx ? `<button class="act" data-next="${esc(nx.id)}">Next not started →</button>` : ""}
+    </div>`;
+  const empty = COV !== "all" && !rows.length
+    ? `<p class="empty">No release is ${COV === "none" ? "still untouched" :
+        COV === "some" ? "part-worked" : "worked through"}${Q ? " and matches “"+esc(Q)+"”" : ""}.</p>`
+    : `<p class="empty">Nothing matches “${esc(Q)}”.</p>`;
+  return bar + `<p class="count">${rows.length} of ${D.docs.length} documents ·
+      ${cc.started} started, ${cc.done} worked through ·
+      ${cc.pagesWorked} of ${cc.pagesTotal} pages worked</p>` + (rows.length ? rows.map(d => {
+    const c = docCoverage(d.id), st = docState(c);
+    const covPill = st === "done"
+      ? `<span class="pill on">${c.assessed && c.worked < c.total ? "assessed" : "worked through"}</span>`
+      : st === "some" ? `<span class="pill on">${c.worked}/${c.total} worked</span>`
+      : `<span class="pill">not started</span>`;
+    return `
     <div class="card tap" data-go="doc:${esc(d.id)}">
       <div class="head">
         <div class="t">${esc(d.id)}</div>
@@ -422,9 +542,10 @@ function docsView(){
         ${d.y?`<span class="pill">${d.y}</span>`:""}
         ${d.gnt?`<span class="pill warn">${d.gnt} no text</span>`:""}
         ${d.gr?`<span class="pill warn">${d.gr} redaction</span>`:""}
+        ${covPill}
         ${isMarked(kDoc(d.id))?`<span class="pill on">marked</span>`:""}
       </div>
-    </div>`).join("") : `<p class="empty">Nothing matches “${esc(Q)}”.</p>`);
+    </div>`; }).join("") : empty);
 }
 
 function docView(id){
@@ -448,6 +569,11 @@ function docView(id){
           : `<span class="pill">no gaps logged</span>`}</div>
       <div class="m" style="margin-top:9px">No <b>source_url</b> or <b>mirror_url</b> yet, and no working link:
         the release PDFs are still inside the Drive zips, so there is nothing to open externally.</div>
+      <div class="covbar">${workedBtn(kDoc(d.id), d.id,
+        "✓ release assessed", "mark release assessed")}<span class="lab">${(() => {
+          const c = docCoverage(d.id);
+          return c.worked + " of " + c.total + " pages worked";
+        })()}</span></div>
       ${noteBox(kDoc(d.id), d.id)}
     </div>
     ${segs.length ? `<div class="src">Records in this release (${segs.length})</div>` + segs.map(s => `
@@ -455,10 +581,15 @@ function docView(id){
         <div class="t" style="font-size:13.5px">${esc(s.sub)||"<i>no subject line</i>"}</div>
         <div class="m">pp. ${s.a}–${s.b}${s.d?" · "+esc(s.d):""}${s.r?" · "+esc(s.r):""}</div>
       </div>`).join("") : ""}
+    ${coverageComb(id)}
     <div class="src">Pages (${pages.length})</div>
     <div class="card"><div class="rowbtns">${
       pages.map(p => `<button class="act" data-go="page:${esc(id)}:${p}">${p}${
-        isMarked(kPage(id, p)) ? " ★" : ""}</button>`).join("")}</div></div>`;
+        isWorked(kPage(id, p)) ? " ✓" : ""}${
+        isMarked(kPage(id, p)) ? " ★" : ""}</button>`).join("")}</div></div>
+    ${(() => { const nx = nextUnworked(id);
+      return nx ? `<div class="covbar"><button class="act" data-next="${esc(nx.id)}">Next not started →
+        ${esc(nx.id)}</button></div>` : `<p class="count">Every release has been started.</p>`; })()}`;
 }
 
 async function pageView(id, pg){
@@ -505,6 +636,7 @@ async function pageView(id, pg){
     <div class="card">
       <div class="head"><div class="t">${esc(id)} · page ${pg}</div>${starBtn(k,label)}</div>
       ${meta}
+      <div class="covbar">${workedBtn(k, label, "✓ page worked", "mark page worked")}</div>
       ${noteBox(k, label)}
     </div>
     <div class="pagenav">
@@ -825,6 +957,19 @@ function wire(){
       else if (kind === "page")  go("page", {id:a, pg:+b, hl});
     };
   });
+  document.querySelectorAll("[data-worked]").forEach(el => {
+    el.onclick = ev => { ev.preventDefault(); ev.stopPropagation();
+      toggleWorked(el.dataset.worked, el.dataset.label); };
+  });
+  document.querySelectorAll("[data-cov]").forEach(el => {
+    el.onclick = ev => { ev.preventDefault(); ev.stopPropagation();
+      COV = COVS.indexOf(el.dataset.cov) < 0 ? "all" : el.dataset.cov;
+      replaceRoute(0); render(); };
+  });
+  document.querySelectorAll("[data-next]").forEach(el => {
+    el.onclick = ev => { ev.preventDefault(); ev.stopPropagation();
+      go("docs", {id: el.dataset.next}); };
+  });
   document.querySelectorAll("[data-star]").forEach(el => {
     el.onclick = ev => { ev.preventDefault(); ev.stopPropagation();
       toggleStar(el.dataset.star, el.dataset.label); };
@@ -928,7 +1073,7 @@ try { if ("scrollRestoration" in history) history.scrollRestoration = "manual"; 
 (function adoptRoute(){
   const st = hashToState(location.hash);
   if (st) {
-    T = st.T; Q = st.Q || ""; SEL = st.SEL || null;
+    T = st.T; Q = st.Q || ""; SEL = st.SEL || null; COV = st.COV || "all";
     const box = $("q");
     if (box) box.value = Q;
   }
