@@ -6,6 +6,10 @@ mark a task done until the criteria are met and the spine files still load clean
 Run `python3 scripts/verify_spine.py` after every task. It is cheap and it catches
 schema drift, orphan rows, and uncited rows before they compound.
 
+Identity and UX direction lives in `docs/BRANDING_UX_PLAN.md`. It sequences the branding and
+design-system work against this queue and does not replace it; this file stays the queue of
+record.
+
 ---
 
 ## T0. Environment setup (do first, once)
