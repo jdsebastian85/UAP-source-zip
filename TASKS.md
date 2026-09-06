@@ -422,10 +422,29 @@ the browser and never leave the device, and the Drive folder is already shared
 
 ---
 
-## T10. Layer 5 co-presence in the front end — DESIGN RECORDED, NOT BUILT
+## T10. Layer 5 co-presence in the front end — BUILT 2026-09-06
 
 **Spec received 2026-08-09 and transcribed to `docs/T10_copresence.md`** — eleven acceptance
 criteria and the payload contract. That file governs; the summary below is orientation only.
+
+**Built in two commits.** `ae17e22` emits the readability run-strings and the build gate;
+`cdd75a3` renders the panel in `entView`. All eleven criteria are met — the commit messages
+record how each one was satisfied and verified. Three things worth carrying forward:
+
+* **The run-strings cost 7,929 bytes, not the 17.8 KB budgeted.** That figure assumed one
+  character per page; RLE roughly halves it because readability runs in long blocks.
+* **The `mentions` map is not shipped.** The spec budgeted 213.5 KB for a `doc#page` to
+  entity-index map, but the payload already carries that relation in `ents[].c` as cites, so
+  the inverse index is built in the browser in one pass over ~11,000 strings instead.
+* **The build gate is fatal and load-bearing beyond this task.** R/L/N must round-trip
+  through the encoder, cover every page in `pages.jsonl`, and match the published figures —
+  which also appear in `CITATION.cff`'s abstract and `README.md`, so drift means a published
+  claim has gone stale. Update `READ_EXPECT` and those files together, in one commit.
+
+Alias clusters resolve through `aliases.yml`'s own `cites[i]`/`members[i]` pairing rather
+than string matching, because members are surname tokens while entity values carry rank.
+Four ambiguous members are dropped and counted. Grouping is off by default and merged rows
+are labelled unreviewed.
 The `relations.html` fixture is a synthetic demonstration, is not in this repo, and can be
 rebuilt from the spec.
 
