@@ -39,6 +39,20 @@ because a reader cannot tell which rows to trust once one row is wrong.
    revenue, licensing, grant, or career implication, say so in your prose summary —
    the project owner has standing instructions to be told, without being asked.
 
+## Build invariants
+
+**Git must never rewrite line endings in this repository.** `spine/pages.jsonl` is
+byte-indexed at build time and the browser fetches individual page records from it with
+HTTP Range requests, so the bytes that were indexed and the bytes GitHub Pages serves have
+to be the same bytes. `core.autocrlf` is true on the owner's machine; without the `* -text`
+in `.gitattributes` the working copy gains one `` per line and every offset after the
+first is wrong, which breaks the transcript on every page but one. If the transcript ever
+reports "Page record did not parse", check `wc -c spine/pages.jsonl` against
+`git cat-file -s HEAD:spine/pages.jsonl` before looking anywhere else.
+
+**Read spine files with an explicit encoding.** They are UTF-8; Python on Windows defaults
+to cp1252 and will silently mojibake any non-ASCII character it finds.
+
 ## Language discipline
 
 Use natural language and normal punctuation. Limit hyphens. Watch for run-on

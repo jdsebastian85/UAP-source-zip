@@ -167,7 +167,7 @@ which are still inside the Drive zips.
 **Acceptance:** `ocr_recovered.csv` in word schema; a summary of pages recovered, pages
 still failed, and mean confidence by release; `pages.jsonl` byte-identical to before.
 
-### T2.5 — Page image beside the text — RENDERER AND VIEWER DONE 2026-08-09, SOURCES MISSING
+### T2.5 — Page image beside the text — LIVE 2026-09-06, UPLOAD IN PROGRESS
 
 Split the same way as T2.4: everything that does not need the PDFs is built and tested.
 
@@ -194,7 +194,36 @@ Preference order unchanged: Internet Archive item, then a separate assets repo s
 Pages, then a local directory for offline work. Page images are assets, not evidence:
 nothing is written to `spine/`, and nothing is inlined into the payload.
 
-**Blocked on:** the 211 source PDFs, still inside the Drive zips.
+**Live 2026-09-06.** 8,661 pages rendered from the 276 source PDFs and hosted on the
+Internet Archive item `pursue-corpus-page-images`. `url_template` was set from an observed
+URL, never guessed, and `verified_on` records the date a real image was confirmed to load.
+
+Two defects had to be fixed before any image resolved:
+
+* **The host keys images by the real filename, not the catalogued one.** `manifest.csv`
+  records `source_file` with spaces, underscores and dots flattened to hyphens; the render
+  folders — and therefore the IA keys — carry the filename from the source drop. They differ
+  for 90 of 211 releases. `scripts/build_page_image_dirs.py` joins the two on a
+  separator-insensitive key and writes the result to `site/page_images.json` under
+  `folders`, which `pageImageUrl()` consults ahead of the manifest value. All 211 resolve
+  with no ambiguity, and an ambiguous match would be reported and omitted rather than
+  guessed. The mapping is hosting bookkeeping, so it lives in `site/` and `source_file` is
+  left exactly as catalogued.
+* **`build_investigator.py` read the spine CSVs without an encoding**, so on Windows they
+  decoded as cp1252 and a U+2013 reached the built page as mojibake that could never match.
+
+**Upload is not finished.** Roughly 2,000 of 8,661 images were still uploading on
+2026-09-06; releases late in the alphabet report the image missing from the host until it
+completes. Re-run `ia_upload_resume.py` — it skips everything already in `uploaded.txt`.
+
+**Dead weight on the IA item, not yet cleaned:** 1,897 images carry a full Windows path as
+their key (`C:/Users/bashs/...`) from an early run, about 0.51 GB, plus 4,434 IA version-
+history files. A further 206 images sit in folders named `... (n).pdf` — duplicate
+downloads of releases already mapped, which no page view will ever request. All are
+unreachable rather than wrong, and deleting them is a separate decision.
+
+**Still open:** the 211 source PDFs themselves have no `source_url` / `mirror_url` /
+`working_url`. Page images are hosted; the documents they came from are not.
 
 ### T2.6 — Link every document to its sources — DONE for media 2026-08-09
 
