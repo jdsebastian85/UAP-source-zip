@@ -133,6 +133,24 @@ button.act:active{opacity:.7}
 }
 .wbtn.on{background:var(--accent-soft); color:var(--accent); border-color:transparent; font-weight:600}
 .covbar{display:flex; gap:6px; flex-wrap:wrap; align-items:center; margin:2px 0 10px}
+/* T10 co-presence. Evidence layer: flat, opaque, never glass. The only
+   saturated colour in here is --comb-unread, and it means one thing. */
+.mcomb{display:flex; flex-wrap:wrap; gap:2px; margin:9px 0 5px}
+.tk{width:9px; height:15px; border-radius:2px; display:block; padding:0;
+  border:1px solid transparent}
+button.tk{cursor:pointer}
+.tk.R{background:var(--comb-solid)}
+.tk.L{background:transparent; border-color:var(--comb-hollow)}
+.tk.N{background:var(--comb-unread)}
+.spread{display:flex; gap:1px; margin-top:7px}
+.spread i{width:6px; height:11px; border-radius:1px; background:var(--line); display:block}
+.spread i.on{background:var(--worked)}
+.prow .t{font-size:13.5px}
+/* A cite on a page that scored below the legibility proxy is drawn dashed, so
+   a reader can see the page it points at is one the machine read poorly. */
+a.lowcite{border-bottom:1px dashed currentColor; text-decoration:none}
+.cop .lgnd{display:flex; gap:13px; flex-wrap:wrap; font-size:11px; color:var(--dim); margin-top:4px}
+.cop .lgnd span{display:flex; align-items:center; gap:5px}
 .covbar .lab{font-size:12px; color:var(--dim); margin-right:2px}
 .head{display:flex; align-items:flex-start; gap:8px}
 .head .t{flex:1}
@@ -887,6 +905,282 @@ function medView(id){
       src="spine/${esc(m.th)}" alt="Contact sheet for ${esc(m.id)}">`:""}`;
 }
 
+/* ---------- T10 co-presence — Layer 5, derived at query time ---------- *
+ * CLAUDE.md says Layer 5 relations are never stored, which makes this a
+ * rendering problem rather than a pipeline one. Nothing here is written
+ * anywhere; every number is recomputed from the payload on each render.
+ *
+ * The claim is co-presence on a cited page and nothing stronger. No copy in
+ * this panel says two things are related, linked or connected, and none of it
+ * calls the result a network. The data cannot support those words and the
+ * wording is the guardrail, not a style preference.                          */
+
+let PAIRQ = "", CLUSTERED = false;
+
+/* "rid:pg" -> Set(entity index). Built once from ents[].c rather than shipped:
+ * the spec budgeted 213.5 KB for this map, and the payload already carries the
+ * same relation as cites. One pass over ~11,000 strings costs milliseconds. */
+let PE = null;
+function pageEnts(){
+  if (PE) return PE;
+  PE = new Map();
+  D.ents.forEach(e => {
+    for (const c of e.c){
+      let a = PE.get(c);
+      if (!a) PE.set(c, a = new Set());
+      a.add(e.i);
+    }
+  });
+  return PE;
+}
+/* A release_id can contain a colon in principle, so split from the right. */
+const citeRid = c => c.slice(0, c.lastIndexOf(":"));
+const citePg  = c => +c.slice(c.lastIndexOf(":") + 1);
+
+/* Per-release readability, expanded from the run-string the build emits. */
+const PST = {};
+function stateMap(rid){
+  if (PST[rid]) return PST[rid];
+  const doc = D.docs.find(d => d.id === rid), rows = D.pidx[rid] || [], st = [];
+  for (const part of ((doc && doc.read) || "").split(",")){
+    if (!part) continue;
+    const n = +part.slice(1);
+    for (let i = 0; i < n; i++) st.push(part[0]);
+  }
+  const m = new Map();
+  rows.forEach((r, j) => m.set(r[0], st[j] || "R"));
+  return (PST[rid] = m);
+}
+const pgState = (rid, pg) => stateMap(rid).get(pg) || "R";
+
+/* Scope is every page of every release where the subject appears, unreadable
+ * pages included. That is the set where a co-mention could have existed: on a
+ * page nobody could read, this subject may well sit beside something else and
+ * there is no way to know. Reporting coverage against the readable subset
+ * alone would quietly shrink the denominator. */
+function subjectScope(e){
+  const seen = new Set(), docs = [];
+  for (const c of e.c){
+    const r = citeRid(c);
+    if (!seen.has(r)){ seen.add(r); docs.push(r); }
+  }
+  docs.sort();
+  const pages = [];
+  for (const rid of docs) for (const row of (D.pidx[rid] || [])) pages.push([rid, row[0]]);
+  return {docs, pages};
+}
+function scopeCounts(pages){
+  const c = {R:0, L:0, N:0};
+  for (const [rid, pg] of pages) c[pgState(rid, pg)]++;
+  return c;
+}
+
+/* The comb never hides. On a narrow screen it subsamples harder; it is not
+ * behind a collapse control, not behind a media query, and not dropped at any
+ * width. Where it subsamples it says so and states the stride. */
+function machineComb(pages){
+  const max = window.innerWidth < 560 ? 260 : 520;
+  const stride = Math.max(1, Math.ceil(pages.length / max));
+  const shown = [];
+  for (let i = 0; i < pages.length; i += stride) shown.push(pages[i]);
+  const label = {R:"text layer", L:"below the page-legibility proxy", N:"could not be read"};
+  const html = shown.map(([rid, pg]) => {
+    const st = pgState(rid, pg);
+    const ttl = esc(rid) + " p." + pg + " — " + label[st];
+    /* Subsampled ticks stand for several pages, so they do not pretend to be a
+       link to one of them. */
+    return stride === 1
+      ? `<button class="tk ${st}" data-go="page:${esc(rid)}:${pg}" title="${ttl}"></button>`
+      : `<span class="tk ${st}" title="${ttl}"></span>`;
+  }).join("");
+  return {stride, shown: shown.length, html: `<div class="mcomb">${html}</div>`};
+}
+
+const entLabel = r => r.cl ? r.cl : (D.ents[r.i] ? D.ents[r.i].v : "?");
+const isCand = e => e && e.f && e.f !== "CLEAN";
+
+function clusterRows(rows){
+  const loose = [], byCl = new Map();
+  for (const r of rows){
+    const e = D.ents[r.i], cl = e && e.cl;
+    if (!cl){ loose.push(r); continue; }
+    let g = byCl.get(cl);
+    if (!g) byCl.set(cl, g = {cl, i: r.i, members: [], docs: new Set(), cites: []});
+    g.members.push(r.i);
+    r.docs.forEach(d => g.docs.add(d));
+    g.cites.push.apply(g.cites, r.cites);
+  }
+  return loose.concat(Array.from(byCl.values()));
+}
+
+/* Sorted by release count first and page count second, never by raw mention
+ * count: twelve mentions inside one release is a different observation from
+ * twelve across nine, and sorting on the total would hide that. */
+function partnersOf(e){
+  const pe = pageEnts(), by = new Map();
+  for (const c of new Set(e.c)){
+    const set = pe.get(c);
+    if (!set) continue;
+    const rid = citeRid(c);
+    for (const oi of set){
+      if (oi === e.i) continue;
+      let r = by.get(oi);
+      if (!r) by.set(oi, r = {i: oi, docs: new Set(), cites: []});
+      r.docs.add(rid); r.cites.push(c);
+    }
+  }
+  let rows = Array.from(by.values());
+  if (CLUSTERED) rows = clusterRows(rows);
+  rows.sort((a, b) => b.docs.size - a.docs.size
+    || b.cites.length - a.cites.length
+    || entLabel(a).localeCompare(entLabel(b)));
+  return rows;
+}
+
+/* One tick per release in scope, filled where the partner is also present. Two
+ * partners with the same page count but different spread do not look alike. */
+function spreadBar(r, scopeDocs){
+  const stride = Math.max(1, Math.ceil(scopeDocs.length / 60));
+  let html = "";
+  for (let i = 0; i < scopeDocs.length; i += stride)
+    html += `<i class="${r.docs.has(scopeDocs[i]) ? "on" : ""}"></i>`;
+  return `<div class="spread" title="${r.docs.size} of ${scopeDocs.length} releases in scope${
+    stride > 1 ? ", one tick per " + stride + " releases" : ""}">${html}</div>`;
+}
+
+function citeList(cites, hlv){
+  return `<ul class="cites">${cites.slice(0, 60).map(c => {
+    const rid = citeRid(c), pg = citePg(c), low = pgState(rid, pg) === "L";
+    return `<li><a href="#" class="${low ? "lowcite" : ""}" data-go="page:${esc(rid)}:${pg}"${
+      hlv ? ` data-hl="${esc(hlv)}"` : ""} title="${low
+        ? "this page scored below the page-legibility proxy" : ""}">${esc(rid)} · p.${pg}</a></li>`;
+  }).join("")}</ul>${cites.length > 60
+    ? `<div class="m">Showing 60 of ${cites.length} cites.</div>` : ""}`;
+}
+
+/* Three outcomes, never two. "Not in the index" is a fact about the index and
+ * is reported as one; it is not evidence about the corpus. A string matching
+ * several groups is reported ambiguous with the candidates, never resolved. */
+function pairResult(e, str){
+  const q = String(str || "").trim();
+  if (!q) return "";
+  const ql = q.toLowerCase();
+  const exact = D.ents.filter(x => x.v.toLowerCase() === ql
+    || x.vv.some(v => v.toLowerCase() === ql));
+  if (!exact.length){
+    const loose = D.ents.filter(x => x.v.toLowerCase().includes(ql)
+      || x.vv.some(v => v.toLowerCase().includes(ql))).slice(0, 6);
+    return `<div class="warnbox"><b>“${esc(q)}” is not in the index.</b> That is a miss in
+      the entity index, which is a regex pass over readable text — not a finding about the
+      corpus. The string may well be on a page that carries no text layer.</div>` +
+      (loose.length ? `<div class="m">Close surface forms that are indexed:
+        ${loose.map(x => `<button class="act" data-go="ent:${x.i}">${esc(x.v)}</button>`).join(" ")}</div>` : "");
+  }
+  if (exact.length > 1){
+    return `<div class="warnbox"><b>“${esc(q)}” matches ${exact.length} groups.</b>
+      Reported as ambiguous rather than resolved to one of them.</div>
+      <div class="m">${exact.map(x => `<button class="act" data-go="ent:${x.i}">${esc(x.v)}
+        <span class="pill">${esc(x.t)}</span></button>`).join(" ")}</div>`;
+  }
+  const other = exact[0];
+  if (other.i === e.i)
+    return `<div class="m">That is the subject itself.</div>`;
+  const mine = new Set(e.c);
+  const shared = Array.from(new Set(other.c.filter(c => mine.has(c))));
+  const {pages} = subjectScope(e);
+  const unread = scopeCounts(pages).N;
+  if (shared.length){
+    const docs = new Set(shared.map(citeRid));
+    return `<div class="card"><div class="t">Co-present</div>
+      <div class="m"><b>${esc(e.v)}</b> and <b>${esc(other.v)}</b> appear on the same page in
+        ${docs.size} release${docs.size > 1 ? "s" : ""}, ${shared.length}
+        page${shared.length > 1 ? "s" : ""}.
+        ${isCand(other) ? `<span class="pill warn">${esc(other.f)}</span>` : ""}</div>
+      ${citeList(shared, other.vv[0])}</div>`;
+  }
+  return `<div class="card"><div class="t">Not observed</div>
+    <div class="m"><b>${esc(other.v)}</b> was not extracted from any page where
+      <b>${esc(e.v)}</b> was. Within this subject's scope, <b>${unread}</b>
+      page${unread === 1 ? "" : "s"} carry no text layer and were never read, so this is a
+      statement about what the index holds and not about what the pages contain.</div></div>`;
+}
+
+function copresencePanel(e){
+  const {docs, pages} = subjectScope(e);
+  const cnt = scopeCounts(pages);
+  const comb = machineComb(pages);
+  const rows = partnersOf(e);
+  const nMedia = D.media.length;
+
+  const head = `<div class="src">Co-presence — what else sits on these pages</div>
+    <div class="card cop">
+      <div class="m">Scope is every page of the ${docs.length}
+        release${docs.length === 1 ? "" : "s"} where <b>${esc(e.v)}</b> appears
+        — ${pages.length} pages, unreadable ones included, because that is the set where a
+        co-mention could have existed.</div>
+      ${comb.html}
+      <div class="lgnd">
+        <span><i class="tk R"></i>${cnt.R} text layer</span>
+        <span><i class="tk L"></i>${cnt.L} below the page-legibility proxy</span>
+        <span><i class="tk N"></i>${cnt.N} could not be read</span>
+      </div>
+      <div class="m">${comb.stride > 1
+        ? `Subsampled at a fixed stride of ${comb.stride}: ${comb.shown} ticks for
+           ${pages.length} pages. Counts above are over all ${pages.length}, not the sample.`
+        : `One tick per page. Click a tick to open that page.`}</div>
+      <div class="m" style="margin-top:9px">${nMedia} media files are not searched here.
+        A segment can carry a cite by timestamp, but segment confidence is not scored, so a
+        segment would enter with no denominator while every page above has one. Leaving them
+        out silently would break the same rule this comb exists to enforce.</div>
+    </div>`;
+
+  const toggle = `<div class="covbar">
+      <button class="wbtn ${CLUSTERED ? "on" : ""}" data-clust="1">${CLUSTERED
+        ? "✓ grouping unreviewed alias clusters" : "group unreviewed alias clusters"}</button>
+      <span class="lab">${Object.keys(D.clusters || {}).length} clusters, none reviewed</span>
+    </div>`;
+
+  const body = rows.length
+    ? `<div class="src">Co-present with (${rows.length})</div>` + toggle + rows.map(r => {
+        const oe = D.ents[r.i];
+        const nm = entLabel(r);
+        const pages_ = new Set(r.cites).size;
+        return `<div class="card tap prow" ${r.cl ? "" : `data-go="ent:${r.i}"`}>
+          <div class="head"><div class="t">${esc(nm)}</div></div>
+          <div class="m">
+            <span class="pill">${r.docs.size} release${r.docs.size === 1 ? "" : "s"}</span>
+            <span class="pill">${pages_} page${pages_ === 1 ? "" : "s"}</span>
+            ${r.cl ? `<span class="pill warn">unreviewed cluster of ${r.members.length}</span>`
+                   : `<span class="pill">${esc(oe.t)}</span>`}
+            ${!r.cl && isCand(oe) ? `<span class="pill warn">${esc(oe.f)}</span>` : ""}
+          </div>
+          ${spreadBar(r, docs)}
+        </div>`;
+      }).join("")
+    : `<div class="src">Co-present with (0)</div>` + toggle +
+      `<div class="warnbox">No other extracted entity appears on any page where
+        <b>${esc(e.v)}</b> appears. Of the ${pages.length} pages in scope, <b>${cnt.N}</b>
+        carry no text layer and <b>${cnt.L}</b> scored below the page-legibility proxy, so
+        ${cnt.N + cnt.L} of them were never fully read. This is a statement about what the
+        index holds, not about what the pages contain.</div>`;
+
+  const pair = `<div class="src">Pair test</div>
+    <div class="card">
+      <div class="m">Ask whether one other surface form sits on a page with this subject.
+        Three outcomes: co-present with cites, not observed with the unread count, or not in
+        the index at all.</div>
+      <div class="covbar">
+        <input type="text" id="pairq" placeholder="a name or organisation as it appears"
+          value="${esc(PAIRQ)}" style="flex:1; min-width:170px">
+        <button class="act primary" data-pair="1">Test</button>
+        ${PAIRQ ? `<button class="act" data-pair="">Clear</button>` : ""}
+      </div>
+      ${pairResult(e, PAIRQ)}
+    </div>`;
+
+  return head + body + pair;
+}
+
 function entsView(){
   const q = Q.toLowerCase();
   const rows = (q ? D.ents.filter(e =>
@@ -921,11 +1215,9 @@ function entView(i){
         identification. Open the cite and read the page.</div>
       ${noteBox(k, e.v)}
     </div>
+    ${copresencePanel(e)}
     <div class="src">Cites (${e.c.length})</div>
-    <div class="card"><ul class="cites">${e.c.map(c => {
-      const [rid, pg] = c.split(":");
-      return `<li><a href="#" data-go="page:${esc(rid)}:${pg}" data-hl="${esc(e.vv[0])}">${esc(rid)} · p.${pg}</a></li>`;
-    }).join("")}</ul></div>`;
+    <div class="card">${citeList(e.c, e.vv[0])}</div>`;
 }
 
 function marksView(){
@@ -998,6 +1290,19 @@ function wire(){
   document.querySelectorAll("[data-worked]").forEach(el => {
     el.onclick = ev => { ev.preventDefault(); ev.stopPropagation();
       toggleWorked(el.dataset.worked, el.dataset.label); };
+  });
+  document.querySelectorAll("[data-pair]").forEach(el => {
+    el.onclick = ev => { ev.preventDefault(); ev.stopPropagation();
+      const box = $("pairq");
+      PAIRQ = el.dataset.pair ? (box ? box.value : "") : "";
+      render(); };
+  });
+  if ($("pairq")) $("pairq").onkeydown = ev => {
+    if (ev.key === "Enter"){ ev.preventDefault(); PAIRQ = ev.target.value; render(); }
+  };
+  document.querySelectorAll("[data-clust]").forEach(el => {
+    el.onclick = ev => { ev.preventDefault(); ev.stopPropagation();
+      CLUSTERED = !CLUSTERED; render(); };
   });
   document.querySelectorAll("[data-cov]").forEach(el => {
     el.onclick = ev => { ev.preventDefault(); ev.stopPropagation();
@@ -1079,6 +1384,18 @@ function wire(){
       M = {}; migratedNotice = ""; saveM(); render();
     }
   };
+  /* T10 criterion 10: a co-presence panel without its comb is unproducible.
+     A zero result and its denominator ship together or the panel is replaced by
+     a failure notice — an absence claim with no coverage behind it is exactly
+     the thing this tool exists not to make. */
+  if (T === "ents" && SEL){
+    const cop = document.querySelector(".cop");
+    if (cop && !cop.querySelector(".mcomb")){
+      cop.innerHTML = `<div class="warnbox">This panel rendered without its coverage comb,
+        so the co-presence counts below have no denominator and must not be read. This is a
+        build fault, not a finding.</div>`;
+    }
+  }
   applyScroll();
 }
 

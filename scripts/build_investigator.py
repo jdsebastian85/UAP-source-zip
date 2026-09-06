@@ -173,6 +173,61 @@ def flush(cur):
     return [cur["key"][1], cur["off"], cur["len"], mean, cur["low"]]
 
 
+def load_clusters(ents):
+    """aliases.yml -> {cluster_name: [entity group index, ...]}.
+
+    A cluster is a retrieval hint and nothing more. All ten are unreviewed, so
+    the panel defaults to raw surface form and puts grouping behind an explicit
+    toggle: merging unreviewed aliases into one node by default would state an
+    identity nobody has checked.
+
+    Members are surname tokens ("Garrett") while entity values carry rank
+    ("Lt. Col. Garrett"), so a member does not match a group by string equality.
+    The file pairs cites[i] with members[i], and that pairing is what resolves
+    them: a member is bound to the group that both holds its cite and carries
+    the token verbatim. Where that is ambiguous the member is dropped and
+    counted, never guessed at — the same rule T9 applies to marks.
+
+    Parsed with a regex rather than a YAML library because the file has a fixed
+    shape and pyyaml is not installed here."""
+    path = sp("aliases.yml")
+    if not os.path.exists(path):
+        return {}, 0
+    blocks, cur = {}, None
+    for line in open(path, encoding="utf-8").read().splitlines():
+        m = re.match(r"^-\s*cluster:\s*(\S+)", line)
+        if m:
+            cur = m.group(1)
+            blocks[cur] = {"members": [], "cites": []}
+            continue
+        if not cur:
+            continue
+        m = re.match(r"^\s*members:\s*\[(.*)\]\s*$", line)
+        if m:
+            blocks[cur]["members"] = re.findall(r'"([^"]*)"', m.group(1))
+            continue
+        m = re.match(r"^\s*cites:\s*\[(.*)\]\s*$", line)
+        if m:
+            blocks[cur]["cites"] = re.findall(r'"([^"]*)"', m.group(1))
+    bycite = defaultdict(list)
+    for e in ents:
+        for c in set(e["c"]):
+            bycite[c].append(e)
+    out, ambiguous = {}, 0
+    for cl, b in blocks.items():
+        idx = set()
+        for member, cite in zip(b["members"], b["cites"]):
+            hits = [e for e in bycite.get(cite, [])
+                    if any(member in v for v in e["vv"])]
+            if len(hits) == 1:
+                idx.add(hits[0]["i"])
+            elif len(hits) > 1:
+                ambiguous += 1
+        if idx:
+            out[cl] = sorted(idx)
+    return out, ambiguous
+
+
 def build_page_index():
     """release_id -> [[pdf_page, byte_offset, byte_length], ...] into pages.jsonl.
 
@@ -315,6 +370,11 @@ def main(out):
         g["n"] = len(g["c"])
         g["i"] = i
 
+    clusters, cl_ambig = load_clusters(ents)
+    for cl, idx in clusters.items():
+        for i in idx:
+            ents[i]["cl"] = cl
+
     ocr_fmt, ocr_hdr, oidx = build_ocr_index()
 
     # Detected redaction blocks, counted per page. Kept apart from the
@@ -366,7 +426,8 @@ def main(out):
     data = {"built": build["built"], "build": build, "docs": docs, "segs": segs, "media": media,
             "ents": ents, "etotal": n_ment, "pidx": pidx, "npages": npages,
             "oidx": oidx, "ocr_fmt": ocr_fmt, "ocr_hdr": ocr_hdr,
-            "conf_floor": CONF_FLOOR, "red": red, "pimg": pimg}
+            "conf_floor": CONF_FLOOR, "red": red, "pimg": pimg,
+            "clusters": clusters}
 
     tpl = open(os.path.join(ROOT, "site", "investigator.html"), encoding="utf-8").read()
     payload = json.dumps(data, separators=(",", ":"))
@@ -392,6 +453,10 @@ def main(out):
           + f"\n  readability: R {rcounts['R']} / L {rcounts['L']} / N {rcounts['N']} "
             f"in {sum(len(v) for v in runs.values())} bytes of run-string "
             f"(L = page-level text-layer proxy, not a per-word confidence)"
+          + f"\n  alias clusters: {len(clusters)} carrying "
+            f"{sum(len(v) for v in clusters.values())} groups (all unreviewed; "
+            f"grouping is off by default"
+            + (f"; {cl_ambig} member(s) dropped as ambiguous)" if cl_ambig else ")")
           + f"\n  page images: " + (f"template set, verified {pimg.get('verified_on') or 'never'}"
                                     if pimg.get("url_template") else
                                     "no host configured — the page view says so"))
