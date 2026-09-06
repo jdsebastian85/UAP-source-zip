@@ -216,6 +216,12 @@ Two defects had to be fixed before any image resolved:
 2026-09-06; releases late in the alphabet report the image missing from the host until it
 completes. Re-run `ia_upload_resume.py` — it skips everything already in `uploaded.txt`.
 
+**Run it with `py -3.11`.** Python 3.14 cannot complete an SSL handshake with archive.org;
+the connection resets before any upload starts, which looks like a network fault and is not.
+Measured throughput on 2026-09-06 was 6.4 files/min with `SLEEP_SEC = 5`, roughly half the
+theoretical rate — the rest is Internet Archive's own queueing. `bucket_tasks_queued exceeds`
+and 502s are IA-side and the uploader already backs off and retries.
+
 **Dead weight on the IA item, not yet cleaned:** 1,897 images carry a full Windows path as
 their key (`C:/Users/bashs/...`) from an early run, about 0.51 GB, plus 4,434 IA version-
 history files. A further 206 images sit in folders named `... (n).pdf` — duplicate
