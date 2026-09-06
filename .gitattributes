@@ -1,0 +1,7 @@
+# Byte offsets into spine/pages.jsonl are computed at build time and used by
+# the browser as HTTP Range requests against the copy GitHub Pages serves.
+# With core.autocrlf the working tree gained one \r per line, so every offset
+# after the first was short by the number of preceding lines and every page
+# transcript but the first failed to parse. The indexed bytes and the served
+# bytes have to be the same bytes, so git must never rewrite line endings here.
+* -text
