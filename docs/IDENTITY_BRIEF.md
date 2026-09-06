@@ -76,13 +76,13 @@ decision that matters — that it is documented away from PURSUE — is already 
 
 ## Attribution, as shipped
 
-`CITATION.cff` names Joshua Sebastian with `anthro-tech.org` as affiliation; `LICENSE` names
-him as copyright holder. The public site footer carries the holder, the affiliation, the
+`CITATION.cff` names Joshua D. Sebastian with `anthro-tech.org` as affiliation; `LICENSE`
+names him as copyright holder. The public site footer carries the holder, the affiliation, the
 public-domain status of the underlying releases, the CC BY / MIT split and a paste-ready
 citation string — because CC BY was chosen over CC0 specifically so the work is cited, and a
 licence that asks for attribution while the page never says how to give it is asking for
 nothing.
 
-**Open:** whether a middle name or initial belongs in the citation string, and whether to
-register an ORCID. Both are one-line edits to `CITATION.cff`, and both get harder to change
-once people begin citing.
+The middle initial is settled: **Joshua D. Sebastian**, cited as `Sebastian, J. D. (2026)`.
+An ORCID is being registered; `CITATION.cff` carries a commented `orcid:` line showing exactly
+where it goes, so adding it is a one-line edit.

@@ -14,9 +14,14 @@ abstract: >-
   be told apart from an unread page.
 type: dataset
 authors:
-  - given-names: Joshua
+  - given-names: Joshua D.
     family-name: Sebastian
     affiliation: "anthro-tech.org"
+    # Add the ORCID here once registered, as a sibling of the lines above:
+    #   orcid: "https://orcid.org/0000-0000-0000-0000"
+    # It disambiguates this author from every other of the same name in a
+    # bibliography, and is the one addition that gets harder the longer
+    # citations accumulate.
     website: "https://github.com/jdsebastian85"
 repository-code: "https://github.com/jdsebastian85/pursue-corpus"
 url: "https://jdsebastian85.github.io/pursue-corpus/"
