@@ -190,11 +190,11 @@ def build_page_index():
 
 def main(out):
     gaps = defaultdict(lambda: defaultdict(int))
-    for r in csv.DictReader(open(sp("gaps.csv"))):
+    for r in csv.DictReader(open(sp("gaps.csv"), encoding="utf-8")):
         gaps[r["release_id"]][r["gap_type"]] += 1
 
     docs = []
-    for r in csv.DictReader(open(sp("manifest.csv"))):
+    for r in csv.DictReader(open(sp("manifest.csv"), encoding="utf-8")):
         g = dict(gaps.get(r["release_id"], {}))
         docs.append({
             "id": r["release_id"], "sf": r["source_file"], "s": r["subject_meta"][:120],
@@ -204,7 +204,7 @@ def main(out):
         })
 
     segs = defaultdict(list)
-    for r in csv.DictReader(open(sp("segments.csv"))):
+    for r in csv.DictReader(open(sp("segments.csv"), encoding="utf-8")):
         segs[r["release_id"]].append({
             "a": int(r["start_page"]), "b": int(r["end_page"]),
             "sub": r["subject_line"][:120], "d": r["first_date_verbatim"],
@@ -213,7 +213,7 @@ def main(out):
 
     # media.csv carries the measurements; media_links.csv carries the URLs and
     # the files that are in Drive with no spine row. Joined on release_id, never merged.
-    meas = {r["release_id"]: r for r in csv.DictReader(open(sp("media.csv")))}
+    meas = {r["release_id"]: r for r in csv.DictReader(open(sp("media.csv"), encoding="utf-8"))}
     thumbs = {os.path.basename(p) for p in glob.glob(sp("*.jpg"))}
 
     def thumb(rid):
@@ -223,7 +223,7 @@ def main(out):
         return ""
 
     media = []
-    for r in csv.DictReader(open(sp("media_links.csv"))):
+    for r in csv.DictReader(open(sp("media_links.csv"), encoding="utf-8")):
         rid = r["release_id"]
         m = meas.get(rid)
         row = {"id": rid, "st": r["spine_status"], "fam": family(rid), "th": thumb(rid),
@@ -236,7 +236,7 @@ def main(out):
     media.sort(key=lambda x: (x["fam"], x["id"]))
 
     groups, n_ment = {}, 0
-    for r in csv.DictReader(open(sp("entities_normalized.csv"))):
+    for r in csv.DictReader(open(sp("entities_normalized.csv"), encoding="utf-8")):
         n_ment += 1
         key = (r["value_normalized"], r["entity_type"])
         g = groups.setdefault(key, {"v": r["value_normalized"], "t": r["entity_type"],
@@ -256,7 +256,7 @@ def main(out):
     # block and a typed marker are different observations.
     red = defaultdict(dict)
     if os.path.exists(sp("redactions.csv")):
-        for r in csv.DictReader(open(sp("redactions.csv"))):
+        for r in csv.DictReader(open(sp("redactions.csv"), encoding="utf-8")):
             k = int(r["pdf_page"])
             red[r["release_id"]][k] = red[r["release_id"]].get(k, 0) + 1
 
@@ -268,7 +268,7 @@ def main(out):
     pimg = {"url_template": "", "verified_on": ""}
     cfg = os.path.join(ROOT, "site", "page_images.json")
     if os.path.exists(cfg):
-        pimg = json.load(open(cfg))
+        pimg = json.load(open(cfg, encoding="utf-8"))
 
     build = git_build()
     data = {"built": build["built"], "build": build, "docs": docs, "segs": segs, "media": media,

@@ -546,8 +546,14 @@ function renderRecovered(rec, hl){
 function pageImageUrl(rid, pg){
   const t = (D.pimg && D.pimg.url_template) || "";
   if (!t) return "";
+  // The host keys images by the real filename from the source drop. manifest's
+  // source_file is the catalogued name, and for 90 of 211 releases the two
+  // differ (spaces and underscores flattened to hyphens). pimg.folders carries
+  // the resolved host folder; the manifest value is only a fallback.
   const doc = D.docs.find(x => x.id === rid);
-  const sf  = (doc && doc.sf) || "";
+  const fold = (D.pimg && D.pimg.folders) || null;
+  const sf  = (fold && fold[rid]) || (doc && doc.sf) || "";
+  if (!sf) return "";
   return t.replace(/\{source_file\}/g, encodeURIComponent(sf))
           .replace(/\{release_id\}/g, encodeURIComponent(rid))
           .replace(/\{page04\}/g, String(pg).padStart(4, "0"))
