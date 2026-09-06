@@ -137,9 +137,11 @@ opencv plus the source PDFs. That dependency is real and is called out here rath
 - Fix the mojibake item title after the running process exits, not before, or it gets
   overwritten.
 
-**Task 4.2 — prebuilt summary JSON for first paint**
-- Cut the 32 MB that loads before anything renders. Biggest conversion lever available and it
-  touches nothing in the spine.
+**Task 4.2 — prebuilt summary JSON for first paint — WITHDRAWN, premise measured false**
+- Nothing like 32 MB loads before first paint. Measured on the live site: `index.html` is
+  107 KB over the wire and `investigate.html` 240 KB, both gzipped by Pages, and
+  `spine/pages.jsonl` is not fetched until a page view is opened. The 32 MB is the `noRange`
+  fallback for hosts that ignore Range requests; Pages answers `206`. No work to do.
 
 **Task 4.3 — tell someone, on the epistemics angle**
 - One honest post describing what is indexed and what is not, aimed where the coverage-comb

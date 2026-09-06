@@ -916,6 +916,14 @@ function medView(id){
  * wording is the guardrail, not a style preference.                          */
 
 let PAIRQ = "", CLUSTERED = false;
+/* A well-connected subject can be co-present with two thousand other groups.
+ * Rendering every row costs ~56,000 DOM nodes and over a megabyte of markup,
+ * which is unusable on a phone, so the list is capped the way cites already
+ * are. The true total is always stated and so is the ordering, making the cap
+ * visible rather than a silent truncation. PARTALL holds the subject it was
+ * opened for, so moving to another subject does not inherit it. */
+const PART_CAP = 50;
+let PARTALL = null;
 
 /* "rid:pg" -> Set(entity index). Built once from ents[].c rather than shipped:
  * the spec budgeted 213.5 KB for this map, and the payload already carries the
@@ -1140,8 +1148,18 @@ function copresencePanel(e){
       <span class="lab">${Object.keys(D.clusters || {}).length} clusters, none reviewed</span>
     </div>`;
 
+  const showAll = PARTALL === e.i;
+  const shown = showAll ? rows : rows.slice(0, PART_CAP);
+  const capNote = rows.length > PART_CAP
+    ? `<div class="covbar"><button class="act" data-allp="${showAll ? "" : e.i}">${showAll
+        ? `Show the first ${PART_CAP}` : `Show all ${rows.length}`}</button>
+       <span class="lab">Showing ${shown.length} of ${rows.length}, ordered by releases then
+         pages${showAll ? "" : " — the rest continue that order, they are not excluded"}</span>
+       </div>`
+    : "";
+
   const body = rows.length
-    ? `<div class="src">Co-present with (${rows.length})</div>` + toggle + rows.map(r => {
+    ? `<div class="src">Co-present with (${rows.length})</div>` + toggle + capNote + shown.map(r => {
         const oe = D.ents[r.i];
         const nm = entLabel(r);
         const pages_ = new Set(r.cites).size;
@@ -1156,7 +1174,7 @@ function copresencePanel(e){
           </div>
           ${spreadBar(r, docs)}
         </div>`;
-      }).join("")
+      }).join("") + capNote
     : `<div class="src">Co-present with (0)</div>` + toggle +
       `<div class="warnbox">No other extracted entity appears on any page where
         <b>${esc(e.v)}</b> appears. Of the ${pages.length} pages in scope, <b>${cnt.N}</b>
@@ -1300,6 +1318,11 @@ function wire(){
   if ($("pairq")) $("pairq").onkeydown = ev => {
     if (ev.key === "Enter"){ ev.preventDefault(); PAIRQ = ev.target.value; render(); }
   };
+  document.querySelectorAll("[data-allp]").forEach(el => {
+    el.onclick = ev => { ev.preventDefault(); ev.stopPropagation();
+      PARTALL = el.dataset.allp === "" ? null : +el.dataset.allp;
+      render(); };
+  });
   document.querySelectorAll("[data-clust]").forEach(el => {
     el.onclick = ev => { ev.preventDefault(); ev.stopPropagation();
       CLUSTERED = !CLUSTERED; render(); };

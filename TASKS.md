@@ -649,8 +649,23 @@ Ordered by cheapest-and-most-irreversible-if-skipped, not by size.
 
    `docs/T10_copresence.md` carried the same mislabel in its payload section (its own
    verification section was right) and now carries a correction note.
-5. **Prebuilt summary JSON for first paint.** 32 MB loads before anything renders. Biggest
-   conversion lever available and it touches nothing in the spine.
+5. **Prebuilt summary JSON for first paint — WITHDRAWN 2026-09-06, the premise was wrong.**
+   This was listed as the biggest conversion lever on the belief that 32 MB loads before
+   anything renders. Measured against the live site, it does not:
+
+   | | raw | over the wire |
+   |---|---|---|
+   | `index.html` | 1.13 MB | **107 KB** |
+   | `investigate.html` | 1.55 MB | **240 KB** |
+
+   GitHub Pages serves both gzipped, and `spine/pages.jsonl` is not touched until a page view
+   is opened — `getPage` is called from `pageView`, nowhere earlier. The 32 MB figure is the
+   `noRange` fallback, which fires only when a host ignores Range requests. Pages answers
+   `206` with a `Content-Range`, so that path is a local-development condition (python's
+   `http.server` does ignore Range) and not something a visitor ever pays.
+
+   There is no first-paint problem to fix. If one is ever suspected again, measure with
+   `curl --compressed` before building anything.
 6. **Tell someone.** No human has seen it; the traffic is automated indexing. Candidates:
    r/UFOs, r/UAP, the Black Vault community, the FOIA/MuckRock crowd, Hacker News — where
    the angle is the coverage-comb epistemics, not the subject matter. One post, one honest
