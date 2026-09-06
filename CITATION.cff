@@ -13,10 +13,10 @@ abstract: >-
   text layer and 818 fall below the OCR confidence floor, so a null result can
   be told apart from an unread page.
 type: dataset
-# Replace with your legal name if you want personal rather than entity
-# attribution — this is the string that will appear in every citation.
 authors:
-  - name: "Lyriqal Digital Media"
+  - given-names: Joshua
+    family-name: Sebastian
+    affiliation: "anthro-tech.org"
     website: "https://github.com/jdsebastian85"
 repository-code: "https://github.com/jdsebastian85/pursue-corpus"
 url: "https://jdsebastian85.github.io/pursue-corpus/"
