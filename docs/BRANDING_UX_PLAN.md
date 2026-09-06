@@ -28,8 +28,12 @@ UX direction and sequences it against the functional work already queued.
 - Git must never rewrite line endings. `.gitattributes` enforces it. If the transcript ever
   reports "Page record did not parse", check that first.
 - Run `py -3.11 scripts/verify_spine.py` after every task that touches data or the build.
-- No believer tone and no debunker tone. The look is tone too. Amber in the comb means one
-  thing only, that a page could not be read, and no other element may use that colour.
+- No believer tone and no debunker tone. The look is tone too. **Inside the evidence layer
+  the accent hue means one thing only, that a page could not be read, and no other element
+  there may use it.** Settled 2026-09-06 as option B of three: the owner chose orange as the
+  brand accent, which collided with the earlier reservation of amber, so the rule was kept
+  and the hue swapped. The chrome may use the accent freely. See `docs/DESIGN_TOKENS.md` and
+  the rendered comparison in `docs/tokens_preview_orange.html`.
 - The site stays free. The material is public domain and credibility depends on it.
 
 ## A note on the name
@@ -92,15 +96,16 @@ files up, working on them here, and writing results back with exact git commands
 ## Wave 2 — the co-presence comb and evidence-layer polish (T10)
 
 **Task 2.1 — build the comb payload**
-- Emit the per-release run-string of solid, hollow and amber states into the payload, roughly
+- Emit the per-release run-string of solid, hollow and unreadable states into the payload, roughly
   17.8 KB across all 211 releases. This is the one build change T10 needs.
 - Run `verify_spine.py`.
 
 **Task 2.2 — render the comb, non-optional and high contrast**
 - Build the co-presence panel per `docs/T10_copresence.md`: three outcomes never two, a zero
   result unable to render without its denominator, never responsive-hidden.
-- Style it in the flat evidence-layer discipline and confirm amber is unmistakable on a phone
-  in daylight.
+- Style it in the flat evidence-layer discipline with the reserved `--comb-*` tokens, and
+  confirm the unreadable tick is unmistakable on a phone in daylight. The human comb's worked
+  tick is `--worked` (bone), never the accent, so the two stacked rows stay separable.
 
 **Task 2.3 — commit and deploy**
 - Git commands, then a cache-busted deploy check.

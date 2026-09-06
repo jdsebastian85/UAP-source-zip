@@ -31,7 +31,14 @@ the published OCR floor of 60, `N` = no text layer.
 > and backs no corpus-wide data yet. They are different measurements on different scales. The
 > comb's hollow tick means *this page has a text layer that scores poorly on legibility*, and
 > the UI must say that rather than "below the OCR confidence floor". See CLAUDE.md build
-> invariants. It embeds rather than fetches. **If a
+> invariants.
+>
+> **Colour, settled 2026-09-06.** Where this spec says "amber tick", the token is
+> `--comb-unread` — the accent hue, orange in the shipped palette. The reservation the spec
+> intends is unchanged (one hue, one meaning, used nowhere else in the evidence layer); only
+> the hue moved, because the brand accent became orange. `docs/DESIGN_TOKENS.md` is
+> authoritative for the values, and the human comb's worked tick is `--worked`, never the
+> accent, so the two stacked rows stay separable. It embeds rather than fetches. **If a
 page carries both flags, `N` wins.**
 
 **Verification gate.** The run-strings must expand to exactly 6,124 R / 818 L / 1,719 N =
