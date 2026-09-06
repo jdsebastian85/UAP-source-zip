@@ -1,1 +1,1 @@
-﻿{ "url_template": "https://archive.org/download/pursue-corpus-page-images/{release_id}/{page}.jpg" }
+{ "url_template": "https://archive.org/download/pursue-corpus-page-images/{source_file}/p{page04}.jpg" }

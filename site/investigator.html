@@ -546,7 +546,10 @@ function renderRecovered(rec, hl){
 function pageImageUrl(rid, pg){
   const t = (D.pimg && D.pimg.url_template) || "";
   if (!t) return "";
-  return t.replace(/\{release_id\}/g, encodeURIComponent(rid))
+  const doc = D.docs.find(x => x.id === rid);
+  const sf  = (doc && doc.sf) || "";
+  return t.replace(/\{source_file\}/g, encodeURIComponent(sf))
+          .replace(/\{release_id\}/g, encodeURIComponent(rid))
           .replace(/\{page04\}/g, String(pg).padStart(4, "0"))
           .replace(/\{page\}/g, String(pg));
 }

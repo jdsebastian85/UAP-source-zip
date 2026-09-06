@@ -197,7 +197,7 @@ def main(out):
     for r in csv.DictReader(open(sp("manifest.csv"))):
         g = dict(gaps.get(r["release_id"], {}))
         docs.append({
-            "id": r["release_id"], "s": r["subject_meta"][:120],
+            "id": r["release_id"], "sf": r["source_file"], "s": r["subject_meta"][:120],
             "p": int(r["pages"]), "q": round(float(r["mean_ocr_quality"] or 0), 2),
             "y": year(r["release_id"], r["subject_meta"]),
             "gaps": g, "gnt": g.get("NO_TEXT_LAYER", 0), "gr": g.get("REDACTION_MARKER", 0),
