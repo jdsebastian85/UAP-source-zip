@@ -61,10 +61,12 @@ files up, working on them here, and writing results back with exact git commands
 - Put them in a design note, not into the tool yet, so the system is agreed before the build
   is touched.
 
-**Task 0.3 — identity brief**
-- One page: the PURSUE lockup with "an anthro-tech.org project" underneath, the wordmark
-  direction, and how it stays distinct from the Lyriqal and AI v.Human marks.
-- Name where the AI v.Human comb write-up will live and what it is called.
+**Task 0.3 — identity brief — DONE 2026-09-06, `docs/IDENTITY_BRIEF.md`**
+- The lockup, the wordmark direction, and the three things PURSUE must not be mistaken for
+  (Lyriqal, the AI v.Human app, a UAP disclosure site), each with how it stays clear.
+- The separable idea is named **the Coverage Comb** and is written up under the AI v.Human
+  thesis with PURSUE as the worked example. Its exact URL is still the owner's call; that it
+  lives away from PURSUE is settled.
 
 ---
 
